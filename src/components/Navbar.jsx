@@ -52,8 +52,17 @@ function Navbar() {
 
           <li>
             <Link
-              to="/login"
+              to="/dashboard"
               className="bg-yellow-400 text-black px-5 py-2 rounded-lg hover:bg-yellow-500 transition duration-300"
+            >
+              Dashboard
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              to="/login"
+              className="bg-blue-700 text-white px-5 py-2 rounded-lg hover:bg-blue-800 transition duration-300"
             >
               Login
             </Link>

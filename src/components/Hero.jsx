@@ -1,31 +1,30 @@
 function Hero() {
   return (
-    <section className="text-center py-24">
+    <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-36">
+      <div className="max-w-6xl mx-auto px-6 text-center">
 
-      <h1 className="text-6xl font-bold text-slate-800">
-        Nepal's Smart Vehicle Platform
-      </h1>
+        <h1 className="text-5xl md:text-6xl font-bold">
+          Nepal's Smart Vehicle Platform
+        </h1>
 
-      <p className="text-gray-600 mt-6 text-xl">
-        Search, Verify and Manage Vehicles Easily
-      </p>
+        <p className="mt-6 text-lg md:text-xl text-blue-100">
+          Search vehicle details, verify ownership, report stolen vehicles,
+          and access emergency services—all in one place.
+        </p>
 
-      <div className="mt-10">
+        <div className="mt-10 flex justify-center">
+          <input
+            type="text"
+            placeholder="Enter Vehicle Number (e.g. BA 2 PA 1234)"
+              className="w-full max-w-xl px-6 py-4 rounded-l-xl bg-white text-gray-900 placeholder:text-gray-500 text-lg border-2 border-white focus:outline-none focus:ring-4 focus:ring-yellow-300"
+          />
 
-        <input
-          type="text"
-          placeholder="Enter Vehicle Number"
-          className="border border-gray-300 rounded-lg p-4 w-96 shadow-md"
-        />
+          <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-8 rounded-r-xl transition duration-300">
+            Search
+          </button>
+        </div>
 
       </div>
-
-      <button className="mt-6 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition">
-
-        Search Vehicle
-
-      </button>
-
     </section>
   );
 }

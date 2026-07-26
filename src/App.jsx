@@ -1,3 +1,4 @@
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import { Routes, Route } from "react-router-dom";
 import VehicleDetails from "./pages/VehicleDetails";
@@ -19,7 +20,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Auth />} />
         <Route path="/vehicle-lookup" element={<VehicleLookup />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route

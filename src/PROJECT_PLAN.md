@@ -48,7 +48,7 @@
 
 ## Authentication
 
-- [ ] Firebase Authentication
+- [x] Firebase Authentication
 - [ ] Email Login
 - [ ] Nepal Phone OTP
 - [ ] User Registration
@@ -61,6 +61,7 @@
 - [ ] Add Vehicle
 - [ ] Multiple Vehicle Support
 - [ ] Vehicle Health Dashboard
+- [ ] switch language from english to nepani and from nepali to english
 
 ## Vehicle Dashboard
 
@@ -165,3 +166,17 @@
 - Only verified owners can manage their vehicles.
 - Build one feature completely before starting another.
 - Push completed work to GitHub regularly.
+
+
+# 💡 Future Ideas
+
+- Vehicle Buy & Sell
+- Vehicle Loan Partners
+- Insurance Partners
+- Garage & Service Booking
+- Emergency Assistance
+- AI Vehicle Assistant
+- Vehicle Value Estimation
+- Digital Ownership Transfer
+- Service History
+- Maintenance Reminder

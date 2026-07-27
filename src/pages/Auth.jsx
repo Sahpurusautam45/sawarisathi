@@ -46,7 +46,20 @@ function Auth() {
     }
   }
 
-  alert("Validation Passed ✅");
+      try {
+       setLoading(true);
+
+       await registerUser(email, password);
+
+       alert("Account created successfully!");
+
+       navigate("/dashboard");
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
 };
 
   return (

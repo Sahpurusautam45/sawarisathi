@@ -1,6 +1,18 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { auth } from "../firebase/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 function Navbar() {
+  const [user, setUser] = useState(null);
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    setUser(currentUser);
+  });
+
+  return () => unsubscribe();
+}, []);
   return (
     <nav className="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-4">
@@ -50,16 +62,19 @@ function Navbar() {
             </Link>
           </li>
 
+          {user && (
           <li>
             <Link
               to="/dashboard"
               className="bg-yellow-400 text-black px-5 py-2 rounded-lg hover:bg-yellow-500 transition duration-300"
             >
-              Dashboard
+             Dashboard
             </Link>
-          </li>
+           </li>
+          )}
 
-          <li>
+          {!user && (
+           <li>
             <Link
               to="/login"
               className="bg-blue-700 text-white px-5 py-2 rounded-lg hover:bg-blue-800 transition duration-300"
@@ -67,6 +82,8 @@ function Navbar() {
               Login
             </Link>
           </li>
+        
+        )}
 
         </ul>
       </div>

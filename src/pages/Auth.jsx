@@ -47,20 +47,24 @@ function Auth() {
   }
 
       try {
-       setLoading(true);
+        setLoading(true);
 
-       await registerUser(email, password);
+        if (isLogin) {
+          await loginUser(email, password);
+          alert("Login successful!");
+        } else {
+          await registerUser(email, password);
+          alert("Account created successfully!");
+        }
 
-       alert("Account created successfully!");
-
-       navigate("/dashboard");
+        navigate("/dashboard");
 
       } catch (err) {
-        setError(err.message);
+      setError(err.message);
       } finally {
-        setLoading(false);
+      setLoading(false);
       }
-};
+    };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">

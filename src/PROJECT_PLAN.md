@@ -180,3 +180,5 @@
 - Digital Ownership Transfer
 - Service History
 - Maintenance Reminder
+- EV charging station nerrby 
+- EV charge price 

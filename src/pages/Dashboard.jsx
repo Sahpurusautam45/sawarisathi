@@ -1,11 +1,35 @@
+import { useEffect, useState } from "react";
+import { auth, db } from "../firebase/firebase";
+import { doc, getDoc } from "firebase/firestore";
 function Dashboard() {
+  const [fullName, setFullName] = useState("User");
+  useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const user = auth.currentUser;
+
+      if (!user) return;
+
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        setFullName(docSnap.data().fullName);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchUser();
+}, []);
   return (
     <div className="min-h-screen bg-slate-100 p-8">
 
       <div className="max-w-7xl mx-auto">
 
         <h1 className="text-4xl font-bold">
-          👋 Welcome, Purusautam
+          👋 Welcome, {fullName}
         </h1>
 
         <div className="mt-10">

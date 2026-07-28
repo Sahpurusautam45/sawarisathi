@@ -1,3 +1,4 @@
+import ProtectedRoute from "./components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import { Routes, Route } from "react-router-dom";
@@ -22,7 +23,14 @@ function App() {
         <Route path="/services" element={<Services />} />
         <Route path="/login" element={<Auth />} />
         <Route path="/vehicle-lookup" element={<VehicleLookup />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+        }
+      />
         <Route
           path="/vehicle/:vehicleNumber"
           element={<VehicleDetails />}

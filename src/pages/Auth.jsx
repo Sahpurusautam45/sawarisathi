@@ -53,7 +53,7 @@ function Auth() {
           await loginUser(email, password);
           alert("Login successful!");
         } else {
-          await registerUser(email, password);
+          await registerUser(fullName, email, password);
           alert("Account created successfully!");
         }
 

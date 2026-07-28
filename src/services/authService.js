@@ -1,13 +1,35 @@
-import { auth } from "../firebase/firebase";
+import { auth, db } from "../firebase/firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 // Register User
-export const registerUser = (email, password) => {
-  return createUserWithEmailAndPassword(auth, email, password);
+// Register User
+export const registerUser = async (fullName, email, password) => {
+  // Create account in Firebase Authentication
+  const userCredential = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+
+  // Get the newly created user
+  const user = userCredential.user;
+
+  // Save user profile in Firestore
+  await setDoc(doc(db, "users", user.uid), {
+    fullName,
+    email,
+    role: "user",
+    verified: false,
+    vehicleCount: 0,
+    createdAt: serverTimestamp(),
+  });
+
+  return userCredential;
 };
 
 // Login User

@@ -1,12 +1,15 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
 function Dashboard() {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("User");
   useEffect(() => {
   const fetchUser = async () => {
     try {
       const user = auth.currentUser;
+     
 
       if (!user) return;
 
@@ -43,46 +46,6 @@ function Dashboard() {
     <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
 
       <h3 className="text-xl font-bold">
-        Honda Shine
-      </h3>
-
-      <p className="text-gray-500 mt-2">
-        BA 2 PA 1234
-      </p>
-
-      <p className="mt-4 text-green-600 font-semibold">
-        🟢Excellent 
-      </p>
-
-      <button className="mt-6 w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-xl">
-        Manage Vehicle
-      </button>
-
-    </div>
-
-    <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
-
-      <h3 className="text-xl font-bold">
-        Hyundai Creta
-      </h3>
-
-      <p className="text-gray-500 mt-2">
-        BA 20 CHA 5678
-      </p>
-
-      <p className="mt-4 text-yellow-600 font-semibold">
-        🟡 Attention Needed
-      </p>
-
-      <button className="mt-6 w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-xl">
-        Manage Vehicle
-      </button>
-
-    </div>
-
-    <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
-
-      <h3 className="text-xl font-bold">
         + Add Vehicle
       </h3>
 
@@ -90,7 +53,10 @@ function Dashboard() {
         Register another vehicle
       </p>
 
-      <button className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl">
+      <button
+        onClick={() => navigate("/add-vehicle")}
+        className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl"
+      >
         Add Vehicle
       </button>
 

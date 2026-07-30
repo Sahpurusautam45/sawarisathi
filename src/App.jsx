@@ -11,7 +11,7 @@ import About from "./pages/About";
 import Services from "./pages/Services";
 import VehicleLookup from "./pages/VehicleLookup";
 import AddVehicle from "./pages/AddVehicle";
-import ManualVehicleForm from "./pages/ManualVehicleForm";
+import VehicleForm from "./pages/VehicleForm";
 
 function App() {
   return (
@@ -51,14 +51,17 @@ function App() {
           path="/add-vehicle/manual"
           element={
             <ProtectedRoute>
-              <ManualVehicleForm />
+              <VehicleForm />
             </ProtectedRoute>
           }
         />
-
         <Route
-          path="/vehicle/:vehicleNumber"
-          element={<VehicleDetails />}
+          path="/vehicle/:vehicleId"
+          element={
+            <ProtectedRoute>
+              <VehicleDetails />
+            </ProtectedRoute>
+          }
         />
       </Routes>
     </>

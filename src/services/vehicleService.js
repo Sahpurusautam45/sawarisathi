@@ -4,6 +4,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  doc,
+  updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -11,9 +13,7 @@ import {
 export const addVehicle = async (vehicleData) => {
   const user = auth.currentUser;
 
-  if (!user) {
-    throw new Error("User not logged in.");
-  }
+  if (!user) throw new Error("User not logged in.");
 
   return await addDoc(
     collection(db, "users", user.uid, "vehicles"),
@@ -24,13 +24,11 @@ export const addVehicle = async (vehicleData) => {
   );
 };
 
-// Get All Vehicles
+// Get Vehicles
 export const getVehicles = async () => {
   const user = auth.currentUser;
 
-  if (!user) {
-    throw new Error("User not logged in.");
-  }
+  if (!user) throw new Error("User not logged in.");
 
   const snapshot = await getDocs(
     collection(db, "users", user.uid, "vehicles")
@@ -40,4 +38,21 @@ export const getVehicles = async () => {
     id: doc.id,
     ...doc.data(),
   }));
+};
+
+// Update Vehicle
+export const updateVehicle = async (vehicleId, vehicleData) => {
+  const user = auth.currentUser;
+
+  if (!user) throw new Error("User not logged in.");
+
+  const vehicleRef = doc(
+    db,
+    "users",
+    user.uid,
+    "vehicles",
+    vehicleId
+  );
+
+  await updateDoc(vehicleRef, vehicleData);
 };

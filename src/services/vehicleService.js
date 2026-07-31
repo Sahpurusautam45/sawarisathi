@@ -6,6 +6,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -55,4 +56,23 @@ export const updateVehicle = async (vehicleId, vehicleData) => {
   );
 
   await updateDoc(vehicleRef, vehicleData);
+};
+
+// Remove Vehicle
+export const removeVehicle = async (vehicleId) => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("User not logged in.");
+  }
+
+  const vehicleRef = doc(
+    db,
+    "users",
+    user.uid,
+    "vehicles",
+    vehicleId
+  );
+
+  await deleteDoc(vehicleRef);
 };

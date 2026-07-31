@@ -101,10 +101,18 @@ function VehicleDetails() {
                 <p className="text-gray-500 mt-2">Coming Soon</p>
               </div>
 
-              <div className="bg-slate-100 rounded-xl p-5">
-                <h3 className="font-bold text-lg">🛡 Insurance</h3>
-                <p className="text-gray-500 mt-2">Coming Soon</p>
-              </div>
+            <div
+              onClick={() => navigate(`/vehicle/${vehicleId}/insurance`)}
+              className="bg-slate-100 rounded-xl p-5 cursor-pointer hover:bg-slate-200 transition"
+            >
+              <h3 className="font-bold text-lg">
+                🛡 Insurance
+              </h3>
+
+              <p className="text-gray-500 mt-2">
+                Manage Insurance
+              </p>
+            </div>
 
               <div className="bg-slate-100 rounded-xl p-5">
                 <h3 className="font-bold text-lg">💰 Tax</h3>

@@ -12,6 +12,7 @@ import Services from "./pages/Services";
 import VehicleLookup from "./pages/VehicleLookup";
 import AddVehicle from "./pages/AddVehicle";
 import VehicleForm from "./pages/VehicleForm";
+import Insurance from "./pages/Insurance";
 
 function App() {
   return (
@@ -55,11 +56,21 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/vehicle/:vehicleId"
           element={
             <ProtectedRoute>
               <VehicleDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vehicle/:vehicleId/insurance"
+          element={
+            <ProtectedRoute>
+              <Insurance />
             </ProtectedRoute>
           }
         />

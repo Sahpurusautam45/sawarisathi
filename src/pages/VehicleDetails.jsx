@@ -1,7 +1,11 @@
+import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { removeVehicle } from "../services/vehicleService";
 
 function VehicleDetails() {
@@ -9,8 +13,76 @@ function VehicleDetails() {
   const navigate = useNavigate();
 
   const [vehicle, setVehicle] = useState(null);
+  const [bluebookExists, setBluebookExists] = useState(false);
+  const [insuranceExists, setInsuranceExists] = useState(false);
+  const [taxExists, setTaxExists] = useState(false);
+  const [documentsExists, setDocumentsExists] = useState(false);
 
-  // Remove Vehicle
+  useEffect(() => {
+    const fetchVehicle = async () => {
+      try {
+        const user = auth.currentUser;
+
+        if (!user) return;
+
+        const docRef = doc(
+          db,
+          "users",
+          user.uid,
+          "vehicles",
+          vehicleId
+        );
+
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          setVehicle(docSnap.data());
+        }
+        const bluebookRef = doc(
+          db,
+          "users",
+          user.uid,
+          "vehicles",
+          vehicleId,
+          "bluebook",
+          "details"
+     );
+
+        const insuranceRef = doc(
+          db,
+          "users",
+          user.uid,
+          "vehicles",
+          vehicleId,
+          "insurance",
+          "details"
+        );
+
+        const taxRef = doc(
+          db,
+          "users",
+          user.uid,
+          "vehicles",
+          vehicleId,
+          "tax",
+          "details"
+    );
+
+        const bluebookSnap = await getDoc(bluebookRef);
+        const insuranceSnap = await getDoc(insuranceRef);
+        const taxSnap = await getDoc(taxRef);
+
+        setBluebookExists(bluebookSnap.exists());
+        setInsuranceExists(insuranceSnap.exists());
+        setTaxExists(taxSnap.exists());
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchVehicle();
+  }, [vehicleId]);
+
   const handleRemoveVehicle = async () => {
     const confirmed = window.confirm(
       "Remove this vehicle from your dashboard?"
@@ -30,35 +102,9 @@ function VehicleDetails() {
     }
   };
 
-  // Fetch Vehicle
-  useEffect(() => {
-    const fetchVehicle = async () => {
-      try {
-        const user = auth.currentUser;
-
-        if (!user) return;
-
-        const docRef = doc(db, "users", user.uid, "vehicles", vehicleId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setVehicle(docSnap.data());
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    fetchVehicle();
-  }, [vehicleId]);
-
-  if (!vehicle) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
+    if (!vehicle) {
+      return <LoadingSpinner />;
+    }
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
@@ -72,56 +118,169 @@ function VehicleDetails() {
             {vehicle.vehicleNumber}
           </p>
 
-          <div className="mt-6 space-y-3">
-            <p>
-              <strong>Vehicle Type:</strong> {vehicle.vehicleType}
-            </p>
-
-            <p>
-              <strong>Brand:</strong> {vehicle.brand}
-            </p>
-
-            <p>
-              <strong>Model:</strong> {vehicle.model}
-            </p>
-
-            <p>
-              <strong>Color:</strong> {vehicle.color}
-            </p>
-          </div>
-
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">
-              ⚙️ Vehicle Services
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-slate-100 rounded-xl p-5">
-                <h3 className="font-bold text-lg">📘 Bluebook</h3>
-                <p className="text-gray-500 mt-2">Coming Soon</p>
-              </div>
-
-            <div
-              onClick={() => navigate(`/vehicle/${vehicleId}/insurance`)}
-              className="bg-slate-100 rounded-xl p-5 cursor-pointer hover:bg-slate-200 transition"
-            >
-              <h3 className="font-bold text-lg">
-                🛡 Insurance
-              </h3>
-
-              <p className="text-gray-500 mt-2">
-                Manage Insurance
-              </p>
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <div>
+              <strong>Vehicle Type</strong>
+              <p>{vehicle.vehicleType}</p>
             </div>
 
-              <div className="bg-slate-100 rounded-xl p-5">
-                <h3 className="font-bold text-lg">💰 Tax</h3>
-                <p className="text-gray-500 mt-2">Coming Soon</p>
+            <div>
+              <strong>Brand</strong>
+              <p>{vehicle.brand}</p>
+            </div>
+
+            <div>
+              <strong>Model</strong>
+              <p>{vehicle.model}</p>
+            </div>
+
+            <div>
+              <strong>Color</strong>
+              <p>{vehicle.color}</p>
+            </div>
+          </div>
+
+          <div className="mt-10">
+            <h2 className="text-2xl font-bold mb-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold">
+                  📂 Vehicle Records
+                </h2>
+
+                <p className="text-gray-500 mt-1">
+                  Manage all official documents for this vehicle.
+                </p>
+              </div>
+            </h2>
+
+            {/* Fixed: Removed the self-closing standard on this grid container */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Bluebook */}
+              <div
+                onClick={() => navigate(`/vehicle/${vehicleId}/bluebook`)}
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">
+                    📘 Bluebook
+                  </h3>
+
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                          taxExists
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                  }`}
+                  >
+                    {bluebookExists ? "Added" : "Not Added"}
+                  </span>
+                </div>
+
+                <p className="text-gray-500 mt-4">
+                  {bluebookExists
+                    ? "Manage your Bluebook"
+                    : "Add your Bluebook"}
+                </p>
+
+                <p className="text-blue-700 mt-6 font-semibold">
+                  Click to Manage →
+                </p>
               </div>
 
-              <div className="bg-slate-100 rounded-xl p-5">
-                <h3 className="font-bold text-lg">📄 Documents</h3>
-                <p className="text-gray-500 mt-2">Coming Soon</p>
+              {/* Insurance */}
+              <div
+                onClick={() => navigate(`/vehicle/${vehicleId}/insurance`)}
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">
+                    🛡 Insurance
+                  </h3>
+
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                          insuranceExists
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {insuranceExists ? "Added" : "Not Added"}
+                  </span>
+                </div>
+
+                <p className="text-gray-500 mt-4">
+                  {insuranceExists
+                    ? "Manage your Insurance"
+                    : "Add your Insurance"}
+                </p>
+
+                <p className="text-blue-700 mt-6 font-semibold">
+                  Click to Manage →
+                </p>
+              </div>
+
+              {/* Vehicle Tax */}
+              <div
+                onClick={() => navigate(`/vehicle/${vehicleId}/tax`)}
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">
+                    💰 Vehicle Tax
+                  </h3>
+
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                          taxExists
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                         }`}
+                        >
+                    {taxExists ? "Active" : "Inactive"}
+                  </span>
+                </div>
+
+                <p className="text-gray-500 mt-4">
+                  {taxExists
+                ? "Manage your Vehicle Tax"
+                : "Add your Vehicle Tax"}
+                </p>
+
+                <p className="text-blue-700 mt-6 font-semibold">
+                  {bluebookExists
+                ? "Manage →"
+                : "Add Now →"}
+                </p>
+              </div>
+
+              {/* Documents */}
+              <div
+                onClick={() => navigate(`/vehicle/${vehicleId}/documents`)}
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">
+                    📄 Documents
+                  </h3>
+
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                          documentsExists
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {documentsExists ? "Added" : "Not Added"}
+                  </span>
+                </div>
+
+                <p className="text-gray-500 mt-4">
+                  {documentsExists
+                    ? "Manage your Vehicle Documents"
+                    : "Upload Vehicle Documents"}
+                </p>
+
+                <p className="text-blue-700 mt-6 font-semibold">
+                  {documentsExists
+                    ? "Manage →"
+                    : "Add Now →"}
+                </p>
               </div>
             </div>
 

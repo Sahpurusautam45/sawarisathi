@@ -3,7 +3,7 @@ import {
   getInsurance,
 } from "../services/insuranceService";
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import insuranceCompanies from "../data/insuranceCompanies";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -12,6 +12,7 @@ function Insurance() {
   const [category, setCategory] = useState("");
   const [company, setCompany] = useState("");
   const { vehicleId } = useParams();
+  const navigate = useNavigate();
   const [vehicle, setVehicle] = useState(null);
   const [insurance, setInsurance] = useState(null);
   const [otherCompany, setOtherCompany] = useState("");
@@ -98,6 +99,13 @@ fetchInsurance();
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
+      <button
+        onClick={() => navigate(`/vehicle/${vehicleId}`)}
+        className="mb-6 bg-white border px-4 py-2 rounded-xl hover:bg-slate-100 transition"
+      >
+        ← Back to Vehicle Details
+      </button>
+
 
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
 

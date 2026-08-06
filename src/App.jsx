@@ -1,3 +1,6 @@
+import NotFound from "./pages/NotFound";
+import Bluebook from "./pages/Bluebook";
+import Tax from "./pages/Tax";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -13,6 +16,8 @@ import VehicleLookup from "./pages/VehicleLookup";
 import AddVehicle from "./pages/AddVehicle";
 import VehicleForm from "./pages/VehicleForm";
 import Insurance from "./pages/Insurance";
+import AdminDashboard from "./admin/AdminDashboard";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
 function App() {
   return (
@@ -29,6 +34,8 @@ function App() {
         <Route path="/login" element={<Auth />} />
 
         <Route path="/vehicle-lookup" element={<VehicleLookup />} />
+
+        <Route path="*" element={<NotFound />} />
 
         <Route
           path="/dashboard"
@@ -74,6 +81,31 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/vehicle/:vehicleId/tax"
+          element={
+            <ProtectedRoute>
+              <Tax />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vehicle/:vehicleId/bluebook"
+          element={
+            <ProtectedRoute>
+              <Bluebook />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard />
+            </ProtectedAdminRoute>
+        }
+      />
       </Routes>
     </>
   );

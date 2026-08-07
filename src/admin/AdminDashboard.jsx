@@ -74,8 +74,6 @@ function AdminDashboard() {
         />
       </div>
 
-      <DataTable />
-
       <RecentActivity />
     </AdminLayout>
   );

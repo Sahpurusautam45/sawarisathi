@@ -19,7 +19,7 @@ function AdminSidebar() {
     },
     {
       name: "Vehicle Verification",
-      path: "/admin/review",
+      path: "/admin/vehicle-verification",
       icon: <Car size={20} />,
     },
     {

@@ -1,19 +1,19 @@
 import AdminLayout from "../components/admin/AdminLayout";
 
-function Reports() {
+function VehicleVerification() {
   return (
     <AdminLayout>
       <div className="bg-white rounded-2xl shadow-md p-6 mt-8">
         <h2 className="text-2xl font-bold">
-          📊 Reports
+          🚗 Vehicle Verification
         </h2>
 
         <p className="text-gray-500 mt-2">
-          View reported vehicles and users.
+          Review and verify submitted vehicles.
         </p>
       </div>
     </AdminLayout>
   );
 }
 
-export default Reports;
+export default VehicleVerification;

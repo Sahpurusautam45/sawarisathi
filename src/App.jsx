@@ -16,8 +16,13 @@ import VehicleLookup from "./pages/VehicleLookup";
 import AddVehicle from "./pages/AddVehicle";
 import VehicleForm from "./pages/VehicleForm";
 import Insurance from "./pages/Insurance";
+
 import AdminDashboard from "./admin/AdminDashboard";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import VehicleVerification from "./admin/VehicleVerification";
+import Users from "./admin/Users";
+import Reports from "./admin/Reports";
+import Settings from "./admin/Settings";
 
 function App() {
   return (
@@ -25,18 +30,14 @@ function App() {
       <Navbar />
 
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
-
         <Route path="/about" element={<About />} />
-
         <Route path="/services" element={<Services />} />
-
         <Route path="/login" element={<Auth />} />
-
         <Route path="/vehicle-lookup" element={<VehicleLookup />} />
 
-        <Route path="*" element={<NotFound />} />
-
+        {/* User Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -90,6 +91,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/vehicle/:vehicleId/bluebook"
           element={
@@ -98,14 +100,55 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Admin Routes */}
         <Route
           path="/admin"
           element={
             <ProtectedAdminRoute>
               <AdminDashboard />
             </ProtectedAdminRoute>
-        }
-      />
+          }
+        />
+
+        <Route
+          path="/admin/vehicle-verification"
+          element={
+            <ProtectedAdminRoute>
+              <VehicleVerification />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedAdminRoute>
+              <Users />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedAdminRoute>
+              <Reports />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/settings"
+          element={
+            <ProtectedAdminRoute>
+              <Settings />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

@@ -20,6 +20,13 @@ export const addVehicle = async (vehicleData) => {
     collection(db, "users", user.uid, "vehicles"),
     {
       ...vehicleData,
+
+      // Verification Fields
+      status: "Pending",
+      remarks: "",
+      verifiedBy: "",
+      verifiedAt: null,
+
       createdAt: serverTimestamp(),
     }
   );

@@ -2,28 +2,54 @@ import {
   collection,
   getCountFromServer,
   getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 
-import { db, auth } from "../firebase/firebase";
+import { db } from "../firebase/firebase";
 
 // ==============================
 // Dashboard Statistics
 // ==============================
 export const getDashboardStats = async () => {
   try {
+    // Total users
     const usersSnapshot = await getCountFromServer(
       collection(db, "users")
     );
 
-    const vehiclesSnapshot = await getDocs(
-      collection(db, "users", auth.currentUser.uid, "vehicles")
+    // All vehicles
+    const vehiclesRef = collection(db, "vehicles");
+
+    const vehiclesSnapshot = await getCountFromServer(
+      vehiclesRef
+    );
+
+    // Pending vehicles
+    const pendingQuery = query(
+      vehiclesRef,
+      where("status", "==", "Pending")
+    );
+
+    const pendingSnapshot = await getCountFromServer(
+      pendingQuery
+    );
+
+    // Verified vehicles
+    const verifiedQuery = query(
+      vehiclesRef,
+      where("status", "==", "Verified")
+    );
+
+    const verifiedSnapshot = await getCountFromServer(
+      verifiedQuery
     );
 
     return {
       totalUsers: usersSnapshot.data().count,
-      totalVehicles: vehiclesSnapshot.size,
-      pendingVehicles: 0,
-      verifiedVehicles: 0,
+      totalVehicles: vehiclesSnapshot.data().count,
+      pendingVehicles: pendingSnapshot.data().count,
+      verifiedVehicles: verifiedSnapshot.data().count,
     };
   } catch (error) {
     console.error("Dashboard Error:", error);
@@ -31,13 +57,21 @@ export const getDashboardStats = async () => {
   }
 };
 
+
 // ==============================
-// Pending Vehicles (TEST VERSION)
+// Pending Vehicles
 // ==============================
 export const getPendingVehicles = async () => {
   try {
+    const vehiclesRef = collection(db, "vehicles");
+
+    const pendingQuery = query(
+      vehiclesRef,
+      where("status", "==", "Pending")
+    );
+
     const snapshot = await getDocs(
-      collection(db, "users", auth.currentUser.uid, "vehicles")
+      pendingQuery
     );
 
     const vehicles = snapshot.docs.map((doc) => ({
@@ -45,11 +79,18 @@ export const getPendingVehicles = async () => {
       ...doc.data(),
     }));
 
-    console.log("Vehicles:", vehicles);
+    console.log(
+      "Pending Vehicles:",
+      vehicles
+    );
 
     return vehicles;
   } catch (error) {
-    console.error("Vehicle Error:", error);
+    console.error(
+      "Pending Vehicle Error:",
+      error
+    );
+
     throw error;
   }
 };

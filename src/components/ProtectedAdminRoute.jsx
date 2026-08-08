@@ -18,15 +18,36 @@ function ProtectedAdminRoute({ children }) {
       }
 
       try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userRef = doc(
+          db,
+          "users",
+          user.uid
+        );
 
-        if (userDoc.exists()) {
-          setIsAdmin(userDoc.data().role === "admin");
-        } else {
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+          console.log("Admin check: user document not found.");
           setIsAdmin(false);
+          return;
         }
+
+        const userData = userDoc.data();
+
+        console.log("Admin check:", {
+          uid: user.uid,
+          email: user.email,
+          role: userData.role,
+        });
+
+        setIsAdmin(userData.role === "admin");
+
       } catch (error) {
-        console.error(error);
+        console.error(
+          "Admin authentication error:",
+          error
+        );
+
         setIsAdmin(false);
       }
     };
@@ -36,14 +57,22 @@ function ProtectedAdminRoute({ children }) {
     }
   }, [user, loading]);
 
+  // Firebase authentication still loading
   if (loading || isAdmin === null) {
     return <LoadingSpinner />;
   }
 
-  if (!user || !isAdmin) {
+  // Not logged in
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Logged in but not admin
+  if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Admin successfully authenticated
   return children;
 }
 

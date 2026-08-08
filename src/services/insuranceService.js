@@ -36,8 +36,16 @@ export const getInsurance = async (vehicleId) => {
     throw new Error("User not logged in.");
   }
 
-  // FIRST: NEW LOCATION
-  const newRef = doc(
+  if (!vehicleId) {
+    throw new Error("Vehicle ID is required.");
+  }
+
+  // ========================================
+  // NEW LOCATION
+  // vehicles/{vehicleId}/insurance/details
+  // ========================================
+
+  const newInsuranceRef = doc(
     db,
     "vehicles",
     vehicleId,
@@ -45,14 +53,20 @@ export const getInsurance = async (vehicleId) => {
     "details"
   );
 
-  const newSnap = await getDoc(newRef);
+  const newSnapshot = await getDoc(
+    newInsuranceRef
+  );
 
-  if (newSnap.exists()) {
-    return newSnap.data();
+  if (newSnapshot.exists()) {
+    return newSnapshot.data();
   }
 
-  // FALLBACK: OLD LOCATION
-  const oldRef = doc(
+  // ========================================
+  // OLD LOCATION
+  // users/{uid}/vehicles/{vehicleId}/insurance/details
+  // ========================================
+
+  const oldInsuranceRef = doc(
     db,
     "users",
     user.uid,
@@ -62,10 +76,30 @@ export const getInsurance = async (vehicleId) => {
     "details"
   );
 
-  const oldSnap = await getDoc(oldRef);
+  const oldSnapshot = await getDoc(
+    oldInsuranceRef
+  );
 
-  if (oldSnap.exists()) {
-    return oldSnap.data();
+  if (oldSnapshot.exists()) {
+
+    const oldData = oldSnapshot.data();
+
+    // ======================================
+    // MIGRATE OLD → NEW
+    // ======================================
+
+    await setDoc(
+      newInsuranceRef,
+      {
+        ...oldData,
+        migratedAt: serverTimestamp(),
+      },
+      {
+        merge: true,
+      }
+    );
+
+    return oldData;
   }
 
   return null;

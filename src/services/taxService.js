@@ -1,4 +1,5 @@
 import { auth, db } from "../firebase/firebase";
+
 import {
   doc,
   setDoc,
@@ -6,11 +7,23 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-export const saveTax = async (vehicleId, taxData) => {
+
+// ==========================================
+// SAVE TAX
+// ==========================================
+
+export const saveTax = async (
+  vehicleId,
+  taxData
+) => {
   const user = auth.currentUser;
 
   if (!user) {
     throw new Error("User not logged in.");
+  }
+
+  if (!vehicleId) {
+    throw new Error("Vehicle ID is required.");
   }
 
   // NEW LOCATION
@@ -28,15 +41,30 @@ export const saveTax = async (vehicleId, taxData) => {
   });
 };
 
-export const getTax = async (vehicleId) => {
+
+// ==========================================
+// GET TAX
+// ==========================================
+
+export const getTax = async (
+  vehicleId
+) => {
   const user = auth.currentUser;
 
   if (!user) {
     throw new Error("User not logged in.");
   }
 
-  // FIRST: NEW LOCATION
-  const newRef = doc(
+  if (!vehicleId) {
+    throw new Error("Vehicle ID is required.");
+  }
+
+
+  // ========================================
+  // 1. CHECK NEW LOCATION
+  // ========================================
+
+  const newTaxRef = doc(
     db,
     "vehicles",
     vehicleId,
@@ -44,14 +72,20 @@ export const getTax = async (vehicleId) => {
     "details"
   );
 
-  const newSnap = await getDoc(newRef);
+  const newSnapshot = await getDoc(
+    newTaxRef
+  );
 
-  if (newSnap.exists()) {
-    return newSnap.data();
+  if (newSnapshot.exists()) {
+    return newSnapshot.data();
   }
 
-  // FALLBACK: OLD LOCATION
-  const oldRef = doc(
+
+  // ========================================
+  // 2. CHECK OLD LOCATION
+  // ========================================
+
+  const oldTaxRef = doc(
     db,
     "users",
     user.uid,
@@ -61,11 +95,37 @@ export const getTax = async (vehicleId) => {
     "details"
   );
 
-  const oldSnap = await getDoc(oldRef);
+  const oldSnapshot = await getDoc(
+    oldTaxRef
+  );
 
-  if (oldSnap.exists()) {
-    return oldSnap.data();
+
+  // ========================================
+  // 3. MIGRATE OLD → NEW
+  // ========================================
+
+  if (oldSnapshot.exists()) {
+
+    const oldData = oldSnapshot.data();
+
+    await setDoc(
+      newTaxRef,
+      {
+        ...oldData,
+        migratedAt: serverTimestamp(),
+      },
+      {
+        merge: true,
+      }
+    );
+
+    return oldData;
   }
+
+
+  // ========================================
+  // NOTHING FOUND
+  // ========================================
 
   return null;
 };

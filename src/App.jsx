@@ -23,6 +23,7 @@ import VehicleVerification from "./admin/VehicleVerification";
 import Users from "./admin/Users";
 import Reports from "./admin/Reports";
 import Settings from "./admin/Settings";
+import VehicleReview from "./admin/VehicleReview";
 
 function App() {
   return (
@@ -116,6 +117,15 @@ function App() {
           element={
             <ProtectedAdminRoute>
               <VehicleVerification />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/review/:vehicleId"
+          element={
+            <ProtectedAdminRoute>
+              <VehicleReview />
             </ProtectedAdminRoute>
           }
         />

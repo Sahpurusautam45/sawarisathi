@@ -24,8 +24,6 @@ function Tax() {
 
         const docRef = doc(
           db,
-          "users",
-          user.uid,
           "vehicles",
           vehicleId
         );

@@ -2,10 +2,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase/firebase";
-import {
-  doc,
-  getDoc,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { removeVehicle } from "../services/vehicleService";
 
 function VehicleDetails() {
@@ -13,75 +10,129 @@ function VehicleDetails() {
   const navigate = useNavigate();
 
   const [vehicle, setVehicle] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [bluebookExists, setBluebookExists] = useState(false);
   const [insuranceExists, setInsuranceExists] = useState(false);
   const [taxExists, setTaxExists] = useState(false);
   const [documentsExists, setDocumentsExists] = useState(false);
 
   useEffect(() => {
-    const fetchVehicle = async () => {
+    const fetchVehicleData = async () => {
       try {
         const user = auth.currentUser;
 
-        if (!user) return;
+        if (!user) {
+          navigate("/login");
+          return;
+        }
 
-        const docRef = doc(
+        // ==========================================
+        // MAIN VEHICLE
+        // NEW ARCHITECTURE
+        // vehicles/{vehicleId}
+        // ==========================================
+
+        const vehicleRef = doc(
           db,
-          "users",
-          user.uid,
           "vehicles",
           vehicleId
         );
 
-        const docSnap = await getDoc(docRef);
+        const vehicleSnap = await getDoc(vehicleRef);
 
-        if (docSnap.exists()) {
-          setVehicle(docSnap.data());
+        if (!vehicleSnap.exists()) {
+          console.error("Vehicle not found.");
+
+          setVehicle(null);
+          return;
         }
-        const bluebookRef = doc(
-          db,
-          "users",
-          user.uid,
-          "vehicles",
-          vehicleId,
-          "bluebook",
-          "details"
-     );
 
-        const insuranceRef = doc(
-          db,
-          "users",
-          user.uid,
-          "vehicles",
-          vehicleId,
-          "insurance",
-          "details"
-        );
+        setVehicle({
+          id: vehicleSnap.id,
+          ...vehicleSnap.data(),
+        });
 
-        const taxRef = doc(
-          db,
-          "users",
-          user.uid,
-          "vehicles",
-          vehicleId,
-          "tax",
-          "details"
-    );
+        // ==========================================
+        // HELPER
+        // Check NEW location first.
+        // If not found, check OLD location.
+        // ==========================================
 
-        const bluebookSnap = await getDoc(bluebookRef);
-        const insuranceSnap = await getDoc(insuranceRef);
-        const taxSnap = await getDoc(taxRef);
+        const getRecord = async (collectionName) => {
+          // NEW LOCATION
+          const newRef = doc(
+            db,
+            "vehicles",
+            vehicleId,
+            collectionName,
+            "details"
+          );
 
-        setBluebookExists(bluebookSnap.exists());
-        setInsuranceExists(insuranceSnap.exists());
-        setTaxExists(taxSnap.exists());
+          const newSnap = await getDoc(newRef);
+
+          if (newSnap.exists()) {
+            return newSnap.data();
+          }
+
+          // OLD LOCATION
+          const oldRef = doc(
+            db,
+            "users",
+            user.uid,
+            "vehicles",
+            vehicleId,
+            collectionName,
+            "details"
+          );
+
+          const oldSnap = await getDoc(oldRef);
+
+          if (oldSnap.exists()) {
+            return oldSnap.data();
+          }
+
+          return null;
+        };
+
+        // ==========================================
+        // LOAD ALL VEHICLE RECORDS
+        // ==========================================
+
+        const [
+          bluebookData,
+          insuranceData,
+          taxData,
+          documentsData,
+        ] = await Promise.all([
+          getRecord("bluebook"),
+          getRecord("insurance"),
+          getRecord("tax"),
+          getRecord("documents"),
+        ]);
+
+        // ==========================================
+        // UPDATE STATUS BADGES
+        // ==========================================
+
+        setBluebookExists(!!bluebookData);
+        setInsuranceExists(!!insuranceData);
+        setTaxExists(!!taxData);
+        setDocumentsExists(!!documentsData);
+
       } catch (error) {
-        console.error(error);
+        console.error("Vehicle Details Error:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchVehicle();
-  }, [vehicleId]);
+    fetchVehicleData();
+  }, [vehicleId, navigate]);
+
+  // ==========================================
+  // REMOVE VEHICLE
+  // ==========================================
 
   const handleRemoveVehicle = async () => {
     const confirmed = window.confirm(
@@ -98,18 +149,63 @@ function VehicleDetails() {
       navigate("/dashboard");
     } catch (error) {
       console.error(error);
+
       alert("Failed to remove vehicle.");
     }
   };
 
-    if (!vehicle) {
-      return <LoadingSpinner />;
-    }
+  // ==========================================
+  // LOADING
+  // ==========================================
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // ==========================================
+  // VEHICLE NOT FOUND
+  // ==========================================
+
+  if (!vehicle) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+
+          <div className="text-6xl">
+            🚗
+          </div>
+
+          <h2 className="text-2xl font-bold mt-4">
+            Vehicle not found
+          </h2>
+
+          <p className="text-gray-500 mt-2">
+            This vehicle may have been removed or is unavailable.
+          </p>
+
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+          >
+            Back to Dashboard
+          </button>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
+
       <div className="max-w-5xl mx-auto">
+
         <div className="bg-white rounded-2xl shadow-lg p-8">
+
+          {/* ==========================================
+              VEHICLE HEADER
+          ========================================== */}
+
           <h1 className="text-4xl font-bold">
             🚗 {vehicle.brand} {vehicle.model}
           </h1>
@@ -118,7 +214,12 @@ function VehicleDetails() {
             {vehicle.vehicleNumber}
           </p>
 
+          {/* ==========================================
+              VEHICLE INFORMATION
+          ========================================== */}
+
           <div className="mt-6 grid grid-cols-2 gap-4">
+
             <div>
               <strong>Vehicle Type</strong>
               <p>{vehicle.vehicleType}</p>
@@ -138,41 +239,66 @@ function VehicleDetails() {
               <strong>Color</strong>
               <p>{vehicle.color}</p>
             </div>
+
+            <div>
+              <strong>Status</strong>
+
+              <p className="text-yellow-600">
+                {vehicle.status || "Pending"}
+              </p>
+            </div>
+
           </div>
 
+          {/* ==========================================
+              VEHICLE RECORDS
+          ========================================== */}
+
           <div className="mt-10">
-            <h2 className="text-2xl font-bold mb-6">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold">
-                  📂 Vehicle Records
-                </h2>
 
-                <p className="text-gray-500 mt-1">
-                  Manage all official documents for this vehicle.
-                </p>
-              </div>
-            </h2>
+            <div className="mb-6">
 
-            {/* Fixed: Removed the self-closing standard on this grid container */}
+              <h2 className="text-2xl font-bold">
+                📂 Vehicle Records
+              </h2>
+
+              <p className="text-gray-500 mt-1">
+                Manage all official documents for this vehicle.
+              </p>
+
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Bluebook */}
+
+              {/* ======================================
+                  BLUEBOOK
+              ====================================== */}
+
               <div
-                onClick={() => navigate(`/vehicle/${vehicleId}/bluebook`)}
+                onClick={() =>
+                  navigate(`/vehicle/${vehicleId}/bluebook`)
+                }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
+
                 <div className="flex justify-between items-center">
+
                   <h3 className="text-xl font-bold">
                     📘 Bluebook
                   </h3>
 
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                          taxExists
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                  }`}
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      bluebookExists
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
                   >
-                    {bluebookExists ? "Added" : "Not Added"}
+                    {bluebookExists
+                      ? "Added"
+                      : "Not Added"}
                   </span>
+
                 </div>
 
                 <p className="text-gray-500 mt-4">
@@ -184,26 +310,38 @@ function VehicleDetails() {
                 <p className="text-blue-700 mt-6 font-semibold">
                   Click to Manage →
                 </p>
+
               </div>
 
-              {/* Insurance */}
+              {/* ======================================
+                  INSURANCE
+              ====================================== */}
+
               <div
-                onClick={() => navigate(`/vehicle/${vehicleId}/insurance`)}
+                onClick={() =>
+                  navigate(`/vehicle/${vehicleId}/insurance`)
+                }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
+
                 <div className="flex justify-between items-center">
+
                   <h3 className="text-xl font-bold">
                     🛡 Insurance
                   </h3>
 
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                          insuranceExists
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      insuranceExists
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
                     }`}
                   >
-                    {insuranceExists ? "Added" : "Not Added"}
+                    {insuranceExists
+                      ? "Added"
+                      : "Not Added"}
                   </span>
+
                 </div>
 
                 <p className="text-gray-500 mt-4">
@@ -215,59 +353,83 @@ function VehicleDetails() {
                 <p className="text-blue-700 mt-6 font-semibold">
                   Click to Manage →
                 </p>
+
               </div>
 
-              {/* Vehicle Tax */}
+              {/* ======================================
+                  TAX
+              ====================================== */}
+
               <div
-                onClick={() => navigate(`/vehicle/${vehicleId}/tax`)}
+                onClick={() =>
+                  navigate(`/vehicle/${vehicleId}/tax`)
+                }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
+
                 <div className="flex justify-between items-center">
+
                   <h3 className="text-xl font-bold">
                     💰 Vehicle Tax
                   </h3>
 
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                          taxExists
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                         }`}
-                        >
-                    {taxExists ? "Active" : "Inactive"}
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      taxExists
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {taxExists
+                      ? "Active"
+                      : "Inactive"}
                   </span>
+
                 </div>
 
                 <p className="text-gray-500 mt-4">
                   {taxExists
-                ? "Manage your Vehicle Tax"
-                : "Add your Vehicle Tax"}
+                    ? "Manage your Vehicle Tax"
+                    : "Add your Vehicle Tax"}
                 </p>
 
                 <p className="text-blue-700 mt-6 font-semibold">
-                  {bluebookExists
-                ? "Manage →"
-                : "Add Now →"}
+                  {taxExists
+                    ? "Manage →"
+                    : "Add Now →"}
                 </p>
+
               </div>
 
-              {/* Documents */}
+              {/* ======================================
+                  DOCUMENTS
+              ====================================== */}
+
               <div
-                onClick={() => navigate(`/vehicle/${vehicleId}/documents`)}
+                onClick={() =>
+                  navigate(`/vehicle/${vehicleId}/documents`)
+                }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
+
                 <div className="flex justify-between items-center">
+
                   <h3 className="text-xl font-bold">
                     📄 Documents
                   </h3>
 
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                          documentsExists
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      documentsExists
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
                     }`}
                   >
-                    {documentsExists ? "Added" : "Not Added"}
+                    {documentsExists
+                      ? "Added"
+                      : "Not Added"}
                   </span>
+
                 </div>
 
                 <p className="text-gray-500 mt-4">
@@ -281,10 +443,17 @@ function VehicleDetails() {
                     ? "Manage →"
                     : "Add Now →"}
                 </p>
+
               </div>
+
             </div>
 
+            {/* ==========================================
+                ACTIONS
+            ========================================== */}
+
             <div className="mt-8 flex flex-col md:flex-row gap-4">
+
               <button
                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
               >
@@ -297,10 +466,15 @@ function VehicleDetails() {
               >
                 🗑 Remove From My Dashboard
               </button>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }

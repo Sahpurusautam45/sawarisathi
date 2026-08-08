@@ -13,10 +13,9 @@ export const saveBluebook = async (vehicleId, bluebookData) => {
     throw new Error("User not logged in.");
   }
 
+  // NEW LOCATION
   const bluebookRef = doc(
     db,
-    "users",
-    user.uid,
     "vehicles",
     vehicleId,
     "bluebook",
@@ -25,7 +24,7 @@ export const saveBluebook = async (vehicleId, bluebookData) => {
 
   await setDoc(bluebookRef, {
     ...bluebookData,
-    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 };
 
@@ -36,7 +35,23 @@ export const getBluebook = async (vehicleId) => {
     throw new Error("User not logged in.");
   }
 
-  const bluebookRef = doc(
+  // FIRST: NEW LOCATION
+  const newRef = doc(
+    db,
+    "vehicles",
+    vehicleId,
+    "bluebook",
+    "details"
+  );
+
+  const newSnap = await getDoc(newRef);
+
+  if (newSnap.exists()) {
+    return newSnap.data();
+  }
+
+  // FALLBACK: OLD LOCATION
+  const oldRef = doc(
     db,
     "users",
     user.uid,
@@ -46,10 +61,10 @@ export const getBluebook = async (vehicleId) => {
     "details"
   );
 
-  const docSnap = await getDoc(bluebookRef);
+  const oldSnap = await getDoc(oldRef);
 
-  if (docSnap.exists()) {
-    return docSnap.data();
+  if (oldSnap.exists()) {
+    return oldSnap.data();
   }
 
   return null;

@@ -28,8 +28,6 @@ function Insurance() {
 
       const docRef = doc(
         db,
-        "users",
-        user.uid,
         "vehicles",
         vehicleId
       );

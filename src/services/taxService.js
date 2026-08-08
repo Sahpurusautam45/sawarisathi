@@ -13,10 +13,9 @@ export const saveTax = async (vehicleId, taxData) => {
     throw new Error("User not logged in.");
   }
 
+  // NEW LOCATION
   const taxRef = doc(
     db,
-    "users",
-    user.uid,
     "vehicles",
     vehicleId,
     "tax",
@@ -25,7 +24,7 @@ export const saveTax = async (vehicleId, taxData) => {
 
   await setDoc(taxRef, {
     ...taxData,
-    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 };
 
@@ -36,7 +35,23 @@ export const getTax = async (vehicleId) => {
     throw new Error("User not logged in.");
   }
 
-  const taxRef = doc(
+  // FIRST: NEW LOCATION
+  const newRef = doc(
+    db,
+    "vehicles",
+    vehicleId,
+    "tax",
+    "details"
+  );
+
+  const newSnap = await getDoc(newRef);
+
+  if (newSnap.exists()) {
+    return newSnap.data();
+  }
+
+  // FALLBACK: OLD LOCATION
+  const oldRef = doc(
     db,
     "users",
     user.uid,
@@ -46,10 +61,10 @@ export const getTax = async (vehicleId) => {
     "details"
   );
 
-  const docSnap = await getDoc(taxRef);
+  const oldSnap = await getDoc(oldRef);
 
-  if (docSnap.exists()) {
-    return docSnap.data();
+  if (oldSnap.exists()) {
+    return oldSnap.data();
   }
 
   return null;

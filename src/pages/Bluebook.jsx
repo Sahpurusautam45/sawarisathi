@@ -32,11 +32,9 @@ function Bluebook() {
 
         const docRef = doc(
           db,
-          "users",
-          user.uid,
           "vehicles",
           vehicleId
-        );
+      );
 
         const docSnap = await getDoc(docRef);
 

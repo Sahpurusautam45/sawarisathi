@@ -1,6 +1,10 @@
 import { auth, db } from "../firebase/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { getDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 
 export const saveInsurance = async (vehicleId, insuranceData) => {
   const user = auth.currentUser;
@@ -9,10 +13,9 @@ export const saveInsurance = async (vehicleId, insuranceData) => {
     throw new Error("User not logged in.");
   }
 
+  // NEW LOCATION
   const insuranceRef = doc(
     db,
-    "users",
-    user.uid,
     "vehicles",
     vehicleId,
     "insurance",
@@ -22,7 +25,7 @@ export const saveInsurance = async (vehicleId, insuranceData) => {
   await setDoc(insuranceRef, {
     ...insuranceData,
     status: "Pending Verification",
-    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 };
 
@@ -33,7 +36,23 @@ export const getInsurance = async (vehicleId) => {
     throw new Error("User not logged in.");
   }
 
-  const insuranceRef = doc(
+  // FIRST: NEW LOCATION
+  const newRef = doc(
+    db,
+    "vehicles",
+    vehicleId,
+    "insurance",
+    "details"
+  );
+
+  const newSnap = await getDoc(newRef);
+
+  if (newSnap.exists()) {
+    return newSnap.data();
+  }
+
+  // FALLBACK: OLD LOCATION
+  const oldRef = doc(
     db,
     "users",
     user.uid,
@@ -43,10 +62,10 @@ export const getInsurance = async (vehicleId) => {
     "details"
   );
 
-  const docSnap = await getDoc(insuranceRef);
+  const oldSnap = await getDoc(oldRef);
 
-  if (docSnap.exists()) {
-    return docSnap.data();
+  if (oldSnap.exists()) {
+    return oldSnap.data();
   }
 
   return null;

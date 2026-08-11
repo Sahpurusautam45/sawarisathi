@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import {
   doc,
   getDoc,
   updateDoc,
+  setDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -32,6 +35,30 @@ function VehicleReview() {
 
 
   // ==========================================
+  // MASK OWNER NAME
+  // ==========================================
+
+  const maskOwnerName = (name) => {
+    if (!name) return "Not Available";
+
+    const parts = name.trim().split(/\s+/);
+
+    return parts
+      .map((part) => {
+        if (part.length <= 1) {
+          return part;
+        }
+
+        return (
+          part.charAt(0) +
+          "*".repeat(Math.max(1, part.length - 1))
+        );
+      })
+      .join(" ");
+  };
+
+
+  // ==========================================
   // LOAD VEHICLE + BLUEBOOK + INSURANCE + TAX
   // ==========================================
 
@@ -55,11 +82,14 @@ function VehicleReview() {
         );
 
         if (vehicleSnap.exists()) {
+
           setVehicle({
             id: vehicleSnap.id,
             ...vehicleSnap.data(),
           });
+
         } else {
+
           setVehicle(null);
           return;
         }
@@ -83,10 +113,13 @@ function VehicleReview() {
         );
 
         if (bluebookSnap.exists()) {
+
           setBluebook(
             bluebookSnap.data()
           );
+
         } else {
+
           setBluebook(null);
         }
 
@@ -109,10 +142,13 @@ function VehicleReview() {
         );
 
         if (insuranceSnap.exists()) {
+
           setInsurance(
             insuranceSnap.data()
           );
+
         } else {
+
           setInsurance(null);
         }
 
@@ -135,10 +171,13 @@ function VehicleReview() {
         );
 
         if (taxSnap.exists()) {
+
           setTax(
             taxSnap.data()
           );
+
         } else {
+
           setTax(null);
         }
 
@@ -170,6 +209,129 @@ function VehicleReview() {
 
 
   // ==========================================
+  // CREATE PUBLIC VEHICLE RECORD
+  // ==========================================
+
+  const createPublicVehicle = async () => {
+
+    if (!vehicle) {
+      throw new Error(
+        "Vehicle information not available."
+      );
+    }
+
+    const publicVehicleRef = doc(
+      db,
+      "publicVehicles",
+      vehicleId
+    );
+
+
+    // ==========================================
+    // PUBLIC-SAFE DATA ONLY
+    // ==========================================
+
+    const publicVehicleData = {
+
+      // Basic vehicle information
+      vehicleNumber:
+        vehicle.vehicleNumber || "",
+
+      vehicleType:
+        vehicle.vehicleType || "",
+
+      brand:
+        vehicle.brand || "",
+
+      model:
+        vehicle.model || "",
+
+      color:
+        vehicle.color || "",
+
+
+      // Public owner information
+      // Full name is NEVER published
+      ownerNameMasked:
+        maskOwnerName(vehicle.ownerName),
+
+
+      // Verification
+      status: "Verified",
+
+      verificationBadge: true,
+
+
+      // Security
+      stolenStatus: "Not Reported",
+
+
+      // Bluebook safe information
+      registrationDate:
+        bluebook?.registrationDate || null,
+
+      bluebookExpiry:
+        bluebook?.expiryDate || null,
+
+
+      // Insurance safe information
+      insuranceStatus:
+        insurance
+          ? insurance.status || "Submitted"
+          : "Not Added",
+
+      insuranceExpiry:
+        insurance?.validUntil || null,
+
+
+      // Tax safe information
+      taxStatus:
+        tax
+          ? tax.status || "Submitted"
+          : "Not Added",
+
+      taxExpiry:
+        tax?.paidUntil || null,
+
+
+      // Public record timestamps
+      verifiedAt:
+        serverTimestamp(),
+
+      updatedAt:
+        serverTimestamp(),
+
+      createdFrom:
+        "SawariSathi Admin Verification",
+    };
+
+
+    await setDoc(
+      publicVehicleRef,
+      publicVehicleData
+    );
+  };
+
+
+  // ==========================================
+  // REMOVE PUBLIC VEHICLE
+  // ==========================================
+
+  const removePublicVehicle = async () => {
+
+    const publicVehicleRef = doc(
+      db,
+      "publicVehicles",
+      vehicleId
+    );
+
+    await deleteDoc(
+      publicVehicleRef
+    );
+  };
+
+
+  // ==========================================
   // APPROVE / REJECT VEHICLE
   // ==========================================
 
@@ -179,21 +341,29 @@ function VehicleReview() {
 
     if (!vehicle) return;
 
+
     const confirmed = window.confirm(
       `Are you sure you want to ${status.toLowerCase()} this vehicle?`
     );
 
     if (!confirmed) return;
 
+
     try {
 
       setActionLoading(true);
+
+
+      // ======================================
+      // UPDATE PRIVATE VEHICLE
+      // ======================================
 
       const vehicleRef = doc(
         db,
         "vehicles",
         vehicleId
       );
+
 
       await updateDoc(
         vehicleRef,
@@ -204,18 +374,60 @@ function VehicleReview() {
             status === "Verified"
               ? serverTimestamp()
               : null,
+
+          updatedAt:
+            serverTimestamp(),
         }
       );
 
-      alert(
-        status === "Verified"
-          ? "Vehicle verified successfully!"
-          : "Vehicle rejected."
-      );
+
+      // ======================================
+      // VERIFIED
+      // CREATE PUBLIC RECORD
+      // ======================================
+
+      if (status === "Verified") {
+
+        await createPublicVehicle();
+
+        alert(
+          "Vehicle verified successfully and added to public search!"
+        );
+
+      }
+
+
+      // ======================================
+      // REJECTED
+      // REMOVE PUBLIC RECORD IF EXISTS
+      // ======================================
+
+      if (status === "Rejected") {
+
+        try {
+
+          await removePublicVehicle();
+
+        } catch (publicError) {
+
+          console.warn(
+            "Public vehicle record could not be removed:",
+            publicError
+          );
+
+        }
+
+
+        alert(
+          "Vehicle rejected."
+        );
+      }
+
 
       navigate(
         "/admin/vehicle-verification"
       );
+
 
     } catch (error) {
 
@@ -284,7 +496,6 @@ function VehicleReview() {
 
       </AdminLayout>
     );
-
   }
 
 

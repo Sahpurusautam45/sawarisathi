@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { getVehicles } from "../services/vehicleService";
+import { useLanguage } from "../context/LanguageContext";
 
 function Dashboard() {
   const navigate = useNavigate();
+
+  const { language, t } = useLanguage();
 
   const [fullName, setFullName] = useState("User");
   const [vehicles, setVehicles] = useState([]);
@@ -50,11 +53,13 @@ function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
+
           <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
 
           <p className="text-gray-500 mt-4">
-            Loading your vehicles...
+            {t("loadingVehicles")}
           </p>
+
         </div>
       </div>
     );
@@ -63,27 +68,40 @@ function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
 
-      {/* Welcome Section */}
+      {/* ==============================
+          Welcome Section
+      ============================== */}
+
       <div className="mb-8">
+
         <h1 className="text-3xl font-bold text-gray-800">
-          Welcome, {fullName} 👋
+          {t("welcome")}, {fullName} 👋
         </h1>
 
         <p className="text-gray-500 mt-2">
-          Manage your vehicles, insurance, tax and Bluebook in one place.
+          {t("manageYourVehicles")}
         </p>
+
       </div>
 
-      {/* Vehicles Section */}
+
+      {/* ==============================
+          Vehicles Section
+      ============================== */}
+
       <div className="mt-10">
 
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
-          My Vehicles
+          {t("myVehicles")}
         </h2>
+
 
         {vehicles.length === 0 ? (
 
-          /* No Vehicles */
+          /* ============================
+             No Vehicles
+          ============================ */
+
           <div className="bg-white rounded-2xl shadow-sm border p-8 text-center">
 
             <div className="text-6xl">
@@ -91,26 +109,28 @@ function Dashboard() {
             </div>
 
             <h3 className="text-2xl font-bold mt-4">
-              No vehicles added yet
+              {t("noVehiclesYet")}
             </h3>
 
             <p className="text-gray-500 mt-3">
-              Add your first vehicle to manage insurance,
-              tax, Bluebook and more.
+              {t("addFirstVehicleMessage")}
             </p>
 
             <button
               onClick={() => navigate("/add-vehicle")}
               className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl"
             >
-              Add Your First Vehicle
+              {t("addYourFirstVehicle")}
             </button>
 
           </div>
 
         ) : (
 
-          /* Vehicle List */
+          /* ============================
+             Vehicle List
+          ============================ */
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             {vehicles.map((vehicle) => (
@@ -133,8 +153,11 @@ function Dashboard() {
                 </p>
 
                 <p className="text-gray-500 mt-2">
-                  Color: {vehicle.color}
+                  {t("color")}: {vehicle.color}
                 </p>
+
+
+                {/* Status */}
 
                 <div className="mt-4">
 
@@ -147,10 +170,17 @@ function Dashboard() {
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {vehicle.status || "Pending"}
+                    {vehicle.status === "Verified"
+                      ? t("verified")
+                      : vehicle.status === "Rejected"
+                      ? t("rejected")
+                      : t("pending")}
                   </span>
 
                 </div>
+
+
+                {/* Manage Vehicle */}
 
                 <button
                   onClick={() =>
@@ -158,7 +188,7 @@ function Dashboard() {
                   }
                   className="mt-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl"
                 >
-                  Manage Vehicle
+                  {t("manageVehicle")}
                 </button>
 
               </div>
@@ -171,26 +201,32 @@ function Dashboard() {
 
       </div>
 
-      {/* Add Another Vehicle */}
+
+      {/* ==============================
+          Add Another Vehicle
+      ============================== */}
+
       {vehicles.length > 0 && (
+
         <div className="mt-8 bg-gray-50 rounded-2xl border p-6 text-center">
 
           <h3 className="text-xl font-bold">
-            + Add Another Vehicle
+            + {t("addAnotherVehicle")}
           </h3>
 
           <p className="text-gray-500 mt-2">
-            Register another vehicle
+            {t("registerAnotherVehicle")}
           </p>
 
           <button
             onClick={() => navigate("/add-vehicle")}
             className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl"
           >
-            Add Vehicle
+            {t("addVehicle")}
           </button>
 
         </div>
+
       )}
 
     </div>

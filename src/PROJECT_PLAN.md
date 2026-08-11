@@ -49,58 +49,57 @@
 ## Authentication
 
 - [x] Firebase Authentication
-- [ ] Email Login
+- [x] Email Login
 - [ ] Nepal Phone OTP
-- [ ] User Registration
+- [x] User Registration
 - [ ] Forgot Password
 
 ## User Dashboard
 
 - [x] Dashboard Home
 - [x] My Vehicles
-- [ ] Add Vehicle
-- [ ] Multiple Vehicle Support
-- [ ] Vehicle Health Dashboard
+- [x] Add Vehicle
+- [x] Multiple Vehicle Support
+- [x] Vehicle Health Dashboard
 - [ ] switch language from english to nepani and from nepali to english
 
 ## Vehicle Dashboard
 
-- [ ] Alerts Section
-- [ ] Bluebook Section
-- [ ] Insurance Section
-- [ ] PUCC Section
+- [x] Alerts Section
+- [x] Bluebook Section
+- [x] Insurance Section
 - [ ] Documents Section
 - [ ] Vehicle History Section
 
 ## Vehicle Verification
 
-- [ ] Add vehicle using Vehicle Number
+- [x] Add vehicle using Vehicle Number
 - [ ] Verify using Last 5 Chassis Digits
 - [ ] OTP Verification
-- [ ] Admin Approval
+- [x] Admin Approval
 
 ## Public Vehicle Lookup
 
 - [ ] Search Vehicle
-- [ ] Vehicle Information
+- [x] Vehicle Information
 - [ ] Masked Owner Name
-- [ ] Verification Badge
+- [x] Verification Badge
 - [ ] Stolen Status
 
 ## Vehicle Security
 
 - [ ] Report Stolen Vehicle
 - [ ] Report Recovered Vehicle
-- [ ] Admin Review
+- [x] Admin Review
 - [ ] Public Alert Badge
 
 ## Admin Dashboard
 
-- [ ] Admin Login
-- [ ] Verify Users
-- [ ] Verify Vehicles
-- [ ] Manage Reports
-- [ ] Dashboard Analytics
+- [x] Admin Login
+- [x] Verify Users
+- [x] Verify Vehicles
+- [x] Manage Reports
+- [x] Dashboard Analytics
 
 ---
 

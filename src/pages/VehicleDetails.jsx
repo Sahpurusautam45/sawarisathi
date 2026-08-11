@@ -4,10 +4,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { removeVehicle } from "../services/vehicleService";
+import { useLanguage } from "../context/LanguageContext";
 
 function VehicleDetails() {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
+
+  const { t } = useLanguage();
 
   const [vehicle, setVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,8 +32,6 @@ function VehicleDetails() {
 
         // ==========================================
         // MAIN VEHICLE
-        // NEW ARCHITECTURE
-        // vehicles/{vehicleId}
         // ==========================================
 
         const vehicleRef = doc(
@@ -61,6 +62,7 @@ function VehicleDetails() {
 
         const getRecord = async (collectionName) => {
           // NEW LOCATION
+
           const newRef = doc(
             db,
             "vehicles",
@@ -76,6 +78,7 @@ function VehicleDetails() {
           }
 
           // OLD LOCATION
+
           const oldRef = doc(
             db,
             "users",
@@ -136,7 +139,7 @@ function VehicleDetails() {
 
   const handleRemoveVehicle = async () => {
     const confirmed = window.confirm(
-      "Remove this vehicle from your dashboard?"
+      t("removeVehicleConfirm")
     );
 
     if (!confirmed) return;
@@ -144,13 +147,14 @@ function VehicleDetails() {
     try {
       await removeVehicle(vehicleId);
 
-      alert("Vehicle removed successfully!");
+      alert(t("vehicleRemoved"));
 
       navigate("/dashboard");
+
     } catch (error) {
       console.error(error);
 
-      alert("Failed to remove vehicle.");
+      alert(t("removeVehicleFailed"));
     }
   };
 
@@ -169,6 +173,7 @@ function VehicleDetails() {
   if (!vehicle) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+
         <div className="text-center">
 
           <div className="text-6xl">
@@ -176,21 +181,22 @@ function VehicleDetails() {
           </div>
 
           <h2 className="text-2xl font-bold mt-4">
-            Vehicle not found
+            {t("vehicleNotFound")}
           </h2>
 
           <p className="text-gray-500 mt-2">
-            This vehicle may have been removed or is unavailable.
+            {t("vehicleUnavailable")}
           </p>
 
           <button
             onClick={() => navigate("/dashboard")}
             className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
           >
-            Back to Dashboard
+            {t("backToDashboard")}
           </button>
 
         </div>
+
       </div>
     );
   }
@@ -214,6 +220,7 @@ function VehicleDetails() {
             {vehicle.vehicleNumber}
           </p>
 
+
           {/* ==========================================
               VEHICLE INFORMATION
           ========================================== */}
@@ -221,34 +228,35 @@ function VehicleDetails() {
           <div className="mt-6 grid grid-cols-2 gap-4">
 
             <div>
-              <strong>Vehicle Type</strong>
+              <strong>{t("vehicleType")}</strong>
               <p>{vehicle.vehicleType}</p>
             </div>
 
             <div>
-              <strong>Brand</strong>
+              <strong>{t("brand")}</strong>
               <p>{vehicle.brand}</p>
             </div>
 
             <div>
-              <strong>Model</strong>
+              <strong>{t("model")}</strong>
               <p>{vehicle.model}</p>
             </div>
 
             <div>
-              <strong>Color</strong>
+              <strong>{t("color")}</strong>
               <p>{vehicle.color}</p>
             </div>
 
             <div>
-              <strong>Status</strong>
+              <strong>{t("status")}</strong>
 
               <p className="text-yellow-600">
-                {vehicle.status || "Pending"}
+                {vehicle.status || t("pending")}
               </p>
             </div>
 
           </div>
+
 
           {/* ==========================================
               VEHICLE RECORDS
@@ -259,14 +267,15 @@ function VehicleDetails() {
             <div className="mb-6">
 
               <h2 className="text-2xl font-bold">
-                📂 Vehicle Records
+                📂 {t("vehicleRecords")}
               </h2>
 
               <p className="text-gray-500 mt-1">
-                Manage all official documents for this vehicle.
+                {t("manageOfficialDocuments")}
               </p>
 
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -276,7 +285,9 @@ function VehicleDetails() {
 
               <div
                 onClick={() =>
-                  navigate(`/vehicle/${vehicleId}/bluebook`)
+                  navigate(
+                    `/vehicle/${vehicleId}/bluebook`
+                  )
                 }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
@@ -284,7 +295,7 @@ function VehicleDetails() {
                 <div className="flex justify-between items-center">
 
                   <h3 className="text-xl font-bold">
-                    📘 Bluebook
+                    📘 {t("bluebook")}
                   </h3>
 
                   <span
@@ -295,23 +306,24 @@ function VehicleDetails() {
                     }`}
                   >
                     {bluebookExists
-                      ? "Added"
-                      : "Not Added"}
+                      ? t("added")
+                      : t("notAdded")}
                   </span>
 
                 </div>
 
                 <p className="text-gray-500 mt-4">
                   {bluebookExists
-                    ? "Manage your Bluebook"
-                    : "Add your Bluebook"}
+                    ? t("manageBluebook")
+                    : t("addBluebook")}
                 </p>
 
                 <p className="text-blue-700 mt-6 font-semibold">
-                  Click to Manage →
+                  {t("clickToManage")}
                 </p>
 
               </div>
+
 
               {/* ======================================
                   INSURANCE
@@ -319,7 +331,9 @@ function VehicleDetails() {
 
               <div
                 onClick={() =>
-                  navigate(`/vehicle/${vehicleId}/insurance`)
+                  navigate(
+                    `/vehicle/${vehicleId}/insurance`
+                  )
                 }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
@@ -327,7 +341,7 @@ function VehicleDetails() {
                 <div className="flex justify-between items-center">
 
                   <h3 className="text-xl font-bold">
-                    🛡 Insurance
+                    🛡 {t("insurance")}
                   </h3>
 
                   <span
@@ -338,23 +352,24 @@ function VehicleDetails() {
                     }`}
                   >
                     {insuranceExists
-                      ? "Added"
-                      : "Not Added"}
+                      ? t("added")
+                      : t("notAdded")}
                   </span>
 
                 </div>
 
                 <p className="text-gray-500 mt-4">
                   {insuranceExists
-                    ? "Manage your Insurance"
-                    : "Add your Insurance"}
+                    ? t("manageInsurance")
+                    : t("addInsurance")}
                 </p>
 
                 <p className="text-blue-700 mt-6 font-semibold">
-                  Click to Manage →
+                  {t("clickToManage")}
                 </p>
 
               </div>
+
 
               {/* ======================================
                   TAX
@@ -362,7 +377,9 @@ function VehicleDetails() {
 
               <div
                 onClick={() =>
-                  navigate(`/vehicle/${vehicleId}/tax`)
+                  navigate(
+                    `/vehicle/${vehicleId}/tax`
+                  )
                 }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
@@ -370,7 +387,7 @@ function VehicleDetails() {
                 <div className="flex justify-between items-center">
 
                   <h3 className="text-xl font-bold">
-                    💰 Vehicle Tax
+                    💰 {t("vehicleTax")}
                   </h3>
 
                   <span
@@ -381,25 +398,26 @@ function VehicleDetails() {
                     }`}
                   >
                     {taxExists
-                      ? "Active"
-                      : "Inactive"}
+                      ? t("active")
+                      : t("inactive")}
                   </span>
 
                 </div>
 
                 <p className="text-gray-500 mt-4">
                   {taxExists
-                    ? "Manage your Vehicle Tax"
-                    : "Add your Vehicle Tax"}
+                    ? t("manageVehicleTax")
+                    : t("addVehicleTax")}
                 </p>
 
                 <p className="text-blue-700 mt-6 font-semibold">
                   {taxExists
-                    ? "Manage →"
-                    : "Add Now →"}
+                    ? t("manage")
+                    : t("addNow")}
                 </p>
 
               </div>
+
 
               {/* ======================================
                   DOCUMENTS
@@ -407,7 +425,9 @@ function VehicleDetails() {
 
               <div
                 onClick={() =>
-                  navigate(`/vehicle/${vehicleId}/documents`)
+                  navigate(
+                    `/vehicle/${vehicleId}/documents`
+                  )
                 }
                 className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
               >
@@ -415,7 +435,7 @@ function VehicleDetails() {
                 <div className="flex justify-between items-center">
 
                   <h3 className="text-xl font-bold">
-                    📄 Documents
+                    📄 {t("documents")}
                   </h3>
 
                   <span
@@ -426,27 +446,28 @@ function VehicleDetails() {
                     }`}
                   >
                     {documentsExists
-                      ? "Added"
-                      : "Not Added"}
+                      ? t("added")
+                      : t("notAdded")}
                   </span>
 
                 </div>
 
                 <p className="text-gray-500 mt-4">
                   {documentsExists
-                    ? "Manage your Vehicle Documents"
-                    : "Upload Vehicle Documents"}
+                    ? t("manageVehicleDocuments")
+                    : t("uploadVehicleDocuments")}
                 </p>
 
                 <p className="text-blue-700 mt-6 font-semibold">
                   {documentsExists
-                    ? "Manage →"
-                    : "Add Now →"}
+                    ? t("manage")
+                    : t("addNow")}
                 </p>
 
               </div>
 
             </div>
+
 
             {/* ==========================================
                 ACTIONS
@@ -457,14 +478,14 @@ function VehicleDetails() {
               <button
                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
               >
-                ⚠ Report Incorrect Information
+                ⚠ {t("reportIncorrectInformation")}
               </button>
 
               <button
                 onClick={handleRemoveVehicle}
                 className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl"
               >
-                🗑 Remove From My Dashboard
+                🗑 {t("removeFromDashboard")}
               </button>
 
             </div>

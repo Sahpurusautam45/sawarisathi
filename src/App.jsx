@@ -1,44 +1,95 @@
-import NotFound from "./pages/NotFound";
-import Bluebook from "./pages/Bluebook";
-import Tax from "./pages/Tax";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
 import { Routes, Route } from "react-router-dom";
-import VehicleDetails from "./pages/VehicleDetails";
 
+// Language
+import { LanguageProvider } from "./context/LanguageContext";
+
+// Components
 import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
+// Public Pages
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Services from "./pages/Services";
+import Auth from "./pages/Auth";
 import VehicleLookup from "./pages/VehicleLookup";
+import PublicSearch from "./pages/PublicSearch";
+import NotFound from "./pages/NotFound";
+
+// User Pages
+import Dashboard from "./pages/Dashboard";
 import AddVehicle from "./pages/AddVehicle";
 import VehicleForm from "./pages/VehicleForm";
+import VehicleDetails from "./pages/VehicleDetails";
+import Bluebook from "./pages/Bluebook";
 import Insurance from "./pages/Insurance";
+import Tax from "./pages/Tax";
 
+// Admin Pages
 import AdminDashboard from "./admin/AdminDashboard";
-import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import VehicleVerification from "./admin/VehicleVerification";
+import VehicleReview from "./admin/VehicleReview";
 import Users from "./admin/Users";
 import Reports from "./admin/Reports";
 import Settings from "./admin/Settings";
-import VehicleReview from "./admin/VehicleReview";
 
 function App() {
   return (
-    <>
+    <LanguageProvider>
+
+      {/* ==============================
+          NAVBAR
+      ============================== */}
+
       <Navbar />
 
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/login" element={<Auth />} />
-        <Route path="/vehicle-lookup" element={<VehicleLookup />} />
 
-        {/* User Protected Routes */}
+      {/* ==============================
+          ROUTES
+      ============================== */}
+
+      <Routes>
+
+        {/* ==========================================
+            PUBLIC ROUTES
+        ========================================== */}
+
+        <Route
+          path="/"
+          element={<Home />}
+        />
+
+        <Route
+          path="/about"
+          element={<About />}
+        />
+
+        <Route
+          path="/services"
+          element={<Services />}
+        />
+
+        <Route
+          path="/login"
+          element={<Auth />}
+        />
+
+        <Route
+          path="/vehicle-lookup"
+          element={<VehicleLookup />}
+        />
+
+        <Route
+          path="/search"
+          element={<PublicSearch />}
+        />
+
+
+        {/* ==========================================
+            USER PROTECTED ROUTES
+        ========================================== */}
+
         <Route
           path="/dashboard"
           element={
@@ -102,7 +153,11 @@ function App() {
           }
         />
 
-        {/* Admin Routes */}
+
+        {/* ==========================================
+            ADMIN ROUTES
+        ========================================== */}
+
         <Route
           path="/admin"
           element={
@@ -157,10 +212,19 @@ function App() {
           }
         />
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
+
+        {/* ==========================================
+            404
+        ========================================== */}
+
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
+
       </Routes>
-    </>
+
+    </LanguageProvider>
   );
 }
 

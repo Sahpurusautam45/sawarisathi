@@ -6,8 +6,8 @@ import {
   FileText,
   Settings,
   LogOut,
+  AlertTriangle,
 } from "lucide-react";
-
 function AdminSidebar() {
   const location = useLocation();
 
@@ -21,6 +21,11 @@ function AdminSidebar() {
       name: "Vehicle Verification",
       path: "/admin/vehicle-verification",
       icon: <Car size={20} />,
+    },
+    {
+      name: "Vehicle Reports",
+      path: "/admin/vehicle-reports",
+      icon: <AlertTriangle size={20} />,
     },
     {
       name: "Users",
@@ -54,11 +59,10 @@ function AdminSidebar() {
             to={item.path}
             className={`flex items-center gap-3 px-6 py-4 transition
 
-            ${
-              location.pathname === item.path
+            ${location.pathname === item.path
                 ? "bg-blue-600"
                 : "hover:bg-slate-800"
-            }`}
+              }`}
           >
             {item.icon}
 

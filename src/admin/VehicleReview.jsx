@@ -273,6 +273,18 @@ function VehicleReview() {
       bluebookExpiry:
         bluebook?.expiryDate || null,
 
+      // Vehicle specifications
+      engineCapacity:
+        bluebook?.engineCapacity || null,
+
+      cylinders:
+        bluebook?.cylinders || null,
+
+      seatingCapacity:
+        bluebook?.["Seating Capacity"] || null,
+
+      fuelType:
+        bluebook?.["Fuel Type"] || null,
 
       // Insurance safe information
       insuranceStatus:

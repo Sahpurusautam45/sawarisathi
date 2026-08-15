@@ -29,6 +29,8 @@ import Tax from "./pages/Tax";
 // Admin Pages
 import AdminDashboard from "./admin/AdminDashboard";
 import VehicleVerification from "./admin/VehicleVerification";
+import VehicleReports from "./admin/VehicleReports";
+import VehicleReportReview from "./admin/VehicleReportReview";
 import VehicleReview from "./admin/VehicleReview";
 import Users from "./admin/Users";
 import Reports from "./admin/Reports";
@@ -172,6 +174,24 @@ function App() {
           element={
             <ProtectedAdminRoute>
               <VehicleVerification />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/vehicle-reports"
+          element={
+            <ProtectedAdminRoute>
+              <VehicleReports />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/vehicle-reports/:reportId"
+          element={
+            <ProtectedAdminRoute>
+              <VehicleReportReview />
             </ProtectedAdminRoute>
           }
         />

@@ -2,7 +2,13 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  addDoc,
+  collection,
+  serverTimestamp,
+} from "firebase/firestore";
 import { removeVehicle } from "../services/vehicleService";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -19,6 +25,13 @@ function VehicleDetails() {
   const [insuranceExists, setInsuranceExists] = useState(false);
   const [taxExists, setTaxExists] = useState(false);
   const [documentsExists, setDocumentsExists] = useState(false);
+
+  const [bluebookDetails, setBluebookDetails] = useState(null);
+
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportType, setReportType] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchVehicleData = async () => {
@@ -122,6 +135,7 @@ function VehicleDetails() {
         setInsuranceExists(!!insuranceData);
         setTaxExists(!!taxData);
         setDocumentsExists(!!documentsData);
+        setBluebookDetails(bluebookData);
 
       } catch (error) {
         console.error("Vehicle Details Error:", error);
@@ -133,9 +147,88 @@ function VehicleDetails() {
     fetchVehicleData();
   }, [vehicleId, navigate]);
 
+
+  // ==========================================
+  // SUBMIT VEHICLE REPORT
+  // ==========================================
+
+  const handleSubmitReport = async () => {
+    if (!reportType) {
+      alert("Please select a reason for the report.");
+      return;
+    }
+
+    if (!reportDescription.trim()) {
+      alert("Please provide details about the report.");
+      return;
+    }
+
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("Please login to submit a report.");
+      return;
+    }
+
+    try {
+      setReportSubmitting(true);
+
+      await addDoc(
+        collection(db, "vehicleReports"),
+        {
+          vehicleId: vehicleId,
+
+          vehicleNumber:
+            vehicle.vehicleNumber || "",
+
+          userId: user.uid,
+
+          reportType: reportType,
+
+          description:
+            reportDescription.trim(),
+
+          status: "Pending",
+
+          createdAt:
+            serverTimestamp(),
+
+          reviewedAt: null,
+
+          reviewedBy: null,
+
+          rejectionReason: null,
+        }
+      );
+
+      alert(
+        "Your report has been submitted successfully and is now pending Admin review."
+      );
+
+      // Reset form
+      setReportType("");
+      setReportDescription("");
+      setShowReportForm(false);
+
+    } catch (error) {
+      console.error(
+        "Vehicle Report Error:",
+        error
+      );
+
+      alert(
+        "Failed to submit the report. Please try again."
+      );
+
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   // ==========================================
   // REMOVE VEHICLE
   // ==========================================
+
 
   const handleRemoveVehicle = async () => {
     const confirmed = window.confirm(
@@ -248,6 +341,38 @@ function VehicleDetails() {
             </div>
 
             <div>
+              <strong>Engine Capacity</strong>
+              <p>
+                {bluebookDetails?.engineCapacity
+                  ? `${bluebookDetails.engineCapacity} CC`
+                  : "Not available"}
+              </p>
+            </div>
+
+            <div>
+              <strong>Cylinders</strong>
+              <p>
+                {bluebookDetails?.cylinders || "Not available"}
+              </p>
+            </div>
+
+            <div>
+              <strong>Seating Capacity</strong>
+              <p>
+                {bluebookDetails?.["Seating Capacity"] || "Not available"}
+              </p>
+            </div>
+
+            <div>
+              <strong>Fuel Type</strong>
+              <p>
+                {bluebookDetails?.["Fuel Type"] || "Not available"}
+              </p>
+            </div>
+
+
+
+            <div>
               <strong>{t("status")}</strong>
 
               <p className="text-yellow-600">
@@ -299,11 +424,10 @@ function VehicleDetails() {
                   </h3>
 
                   <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      bluebookExists
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm ${bluebookExists
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                      }`}
                   >
                     {bluebookExists
                       ? t("added")
@@ -345,11 +469,10 @@ function VehicleDetails() {
                   </h3>
 
                   <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      insuranceExists
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm ${insuranceExists
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                      }`}
                   >
                     {insuranceExists
                       ? t("added")
@@ -391,11 +514,10 @@ function VehicleDetails() {
                   </h3>
 
                   <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      taxExists
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm ${taxExists
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                      }`}
                   >
                     {taxExists
                       ? t("active")
@@ -439,11 +561,10 @@ function VehicleDetails() {
                   </h3>
 
                   <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      documentsExists
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm ${documentsExists
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                      }`}
                   >
                     {documentsExists
                       ? t("added")
@@ -469,24 +590,178 @@ function VehicleDetails() {
             </div>
 
 
-            {/* ==========================================
-                ACTIONS
-            ========================================== */}
+              {/* ==========================================
+                VEHICLE REPORT
+              ========================================== */}
 
-            <div className="mt-8 flex flex-col md:flex-row gap-4">
+            <div className="mt-8">
 
-              <button
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
-              >
-                ⚠ {t("reportIncorrectInformation")}
-              </button>
+              {!showReportForm ? (
 
-              <button
-                onClick={handleRemoveVehicle}
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl"
-              >
-                🗑 {t("removeFromDashboard")}
-              </button>
+                <div className="flex flex-col md:flex-row gap-4">
+
+                  {/* REPORT VEHICLE */}
+
+                  <button
+                    onClick={() => setShowReportForm(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold"
+                  >
+                    🚨 Report Vehicle
+                  </button>
+
+
+                  {/* REMOVE VEHICLE */}
+
+                  <button
+                    onClick={handleRemoveVehicle}
+                    className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl"
+                  >
+                    🗑 {t("removeFromDashboard")}
+                  </button>
+
+                </div>
+
+              ) : (
+
+                /* ======================================
+                   REPORT FORM
+                ====================================== */
+
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+
+                  <h3 className="text-2xl font-bold text-red-700">
+                    🚨 Report Vehicle
+                  </h3>
+
+                  <p className="text-gray-600 mt-2">
+                    Please select the reason for your report
+                    and provide accurate information.
+                  </p>
+
+
+                  {/* VEHICLE */}
+
+                  <div className="mt-5 bg-white rounded-xl p-4 border">
+
+                    <p className="text-sm text-gray-500">
+                      Vehicle
+                    </p>
+
+                    <p className="font-bold text-lg">
+                      {vehicle.vehicleNumber}
+                    </p>
+
+                    <p className="text-gray-600">
+                      {vehicle.brand} {vehicle.model}
+                    </p>
+
+                  </div>
+
+
+                  {/* REPORT TYPE */}
+
+                  <div className="mt-5">
+
+                    <label className="block font-semibold mb-2">
+                      Reason for Report
+                    </label>
+
+                    <select
+                      value={reportType}
+                      onChange={(e) =>
+                        setReportType(e.target.value)
+                      }
+                      className="w-full bg-white border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+
+                      <option value="">
+                        Select a reason
+                      </option>
+
+                      <option value="Vehicle Stolen">
+                        🚨 Vehicle Stolen
+                      </option>
+
+                      <option value="Vehicle Recovered">
+                        🟢 Vehicle Recovered
+                      </option>
+
+                      <option value="Accident / Damage">
+                        💥 Accident / Damage
+                      </option>
+
+                      <option value="Incorrect Vehicle Information">
+                        ⚠️ Incorrect Vehicle Information
+                      </option>
+
+                      <option value="Suspicious Activity">
+                        🔎 Suspicious Activity
+                      </option>
+
+                      <option value="Other">
+                        📝 Other
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  {/* DETAILS */}
+
+                  <div className="mt-5">
+
+                    <label className="block font-semibold mb-2">
+                      Additional Details
+                    </label>
+
+                    <textarea
+                      value={reportDescription}
+                      onChange={(e) =>
+                        setReportDescription(e.target.value)
+                      }
+                      placeholder="Please explain the reason for your report..."
+                      rows="5"
+                      className="w-full bg-white border rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+
+                  </div>
+
+
+                  {/* BUTTONS */}
+
+                  <div className="mt-6 flex flex-col md:flex-row gap-3">
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowReportForm(false);
+                        setReportType("");
+                        setReportDescription("");
+                      }}
+                      disabled={reportSubmitting}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl font-semibold"
+                    >
+                      Cancel
+                    </button>
+
+
+                    <button
+                      type="button"
+                      onClick={handleSubmitReport}
+                      disabled={reportSubmitting}
+                      className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-semibold"
+                    >
+                      {reportSubmitting
+                        ? "Submitting..."
+                        : "Submit Report"}
+                    </button>
+
+                  </div>
+
+                </div>
+
+              )}
 
             </div>
 
@@ -497,6 +772,7 @@ function VehicleDetails() {
       </div>
 
     </div>
+
   );
 }
 

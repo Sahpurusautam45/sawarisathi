@@ -1,4 +1,26 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 function Hero() {
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    const number = vehicleNumber
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase();
+
+    if (!number) {
+      alert("Please enter a vehicle number.");
+      return;
+    }
+
+    navigate(
+      `/search?vehicleNumber=${encodeURIComponent(number)}`
+    );
+  };
+
   return (
     <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-36">
       <div className="max-w-6xl mx-auto px-6 text-center">
@@ -13,15 +35,30 @@ function Hero() {
         </p>
 
         <div className="mt-10 flex justify-center">
+
           <input
             type="text"
+            value={vehicleNumber}
+            onChange={(e) =>
+              setVehicleNumber(e.target.value)
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch();
+              }
+            }}
             placeholder="Enter Vehicle Number (e.g. BA 2 PA 1234)"
-              className="w-full max-w-xl px-6 py-4 rounded-l-xl bg-white text-gray-900 placeholder:text-gray-500 text-lg border-2 border-white focus:outline-none focus:ring-4 focus:ring-yellow-300"
+            className="w-full max-w-xl px-6 py-4 rounded-l-xl bg-white text-gray-900 placeholder:text-gray-500 text-lg border-2 border-white focus:outline-none focus:ring-4 focus:ring-yellow-300"
           />
 
-          <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-8 rounded-r-xl transition duration-300">
+          <button
+            type="button"
+            onClick={handleSearch}
+            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-8 rounded-r-xl transition duration-300"
+          >
             Search
           </button>
+
         </div>
 
       </div>

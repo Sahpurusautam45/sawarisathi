@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   collection,
   query,
   where,
   getDocs,
 } from "firebase/firestore";
+import { useSearchParams } from "react-router-dom";
 
 import { db } from "../firebase/firebase";
-import { useLanguage } from "../context/LanguageContext";
 
 function PublicSearch() {
-  const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
 
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicle, setVehicle] = useState(null);
@@ -19,20 +19,17 @@ function PublicSearch() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
 
-
   // ==========================================
   // SEARCH PUBLIC VEHICLE
   // ==========================================
 
-  const handleSearch = async () => {
-    console.log("HANDLE SEARCH STARTED");
-
-    const number = vehicleNumber
+  const searchVehicle = async (number) => {
+    const cleanNumber = number
       .trim()
       .replace(/\s+/g, " ")
       .toUpperCase();
 
-    if (!number) {
+    if (!cleanNumber) {
       setError("Please enter a vehicle number.");
       return;
     }
@@ -43,16 +40,28 @@ function PublicSearch() {
       setError("");
       setVehicle(null);
 
-      // ========================================
-      // SEARCH ONLY PUBLIC VEHICLES
-      // ========================================
+      console.log(
+        "Searching publicVehicles:",
+        cleanNumber
+      );
 
       const vehicleQuery = query(
         collection(db, "publicVehicles"),
-        where("vehicleNumber", "==", number)
+        where(
+          "vehicleNumber",
+          "==",
+          cleanNumber
+        )
       );
 
-      const snapshot = await getDocs(vehicleQuery);
+      const snapshot = await getDocs(
+        vehicleQuery
+      );
+
+      console.log(
+        "Public vehicle results:",
+        snapshot.size
+      );
 
       if (snapshot.empty) {
         setError(
@@ -68,10 +77,6 @@ function PublicSearch() {
         ...vehicleDoc.data(),
       };
 
-      // ========================================
-      // SAFETY CHECK
-      // ========================================
-
       if (vehicleData.status !== "Verified") {
         setError(
           "This vehicle is not currently publicly verified."
@@ -82,7 +87,10 @@ function PublicSearch() {
       setVehicle(vehicleData);
 
     } catch (error) {
-      console.error("Public Search Error:", error);
+      console.error(
+        "Public Search Error:",
+        error
+      );
 
       setError(
         "Something went wrong while searching."
@@ -95,7 +103,31 @@ function PublicSearch() {
 
 
   // ==========================================
-  // DATE FORMATTER
+  // READ VEHICLE NUMBER FROM URL
+  // ==========================================
+
+  useEffect(() => {
+    const numberFromUrl =
+      searchParams.get("vehicleNumber");
+
+    if (numberFromUrl) {
+      setVehicleNumber(numberFromUrl);
+      searchVehicle(numberFromUrl);
+    }
+  }, [searchParams]);
+
+
+  // ==========================================
+  // SEARCH BUTTON
+  // ==========================================
+
+  const handleSearch = () => {
+    searchVehicle(vehicleNumber);
+  };
+
+
+  // ==========================================
+  // FORMAT DATE
   // ==========================================
 
   const formatDate = (value) => {
@@ -121,15 +153,15 @@ function PublicSearch() {
   // DATE STATUS
   // ==========================================
 
-  const getDateStatus = (dateValue) => {
-    if (!dateValue) {
-      return "Unknown";
+  const getDateStatus = (value) => {
+    if (!value) {
+      return "Not available";
     }
 
-    const date = new Date(dateValue);
+    const date = new Date(value);
 
     if (isNaN(date.getTime())) {
-      return "Unknown";
+      return "Not available";
     }
 
     return date >= new Date()
@@ -142,7 +174,7 @@ function PublicSearch() {
   // STATUS STYLE
   // ==========================================
 
-  const getStatusClass = (status) => {
+  const getStatusStyle = (status) => {
     if (status === "Active") {
       return "bg-green-100 text-green-700";
     }
@@ -244,7 +276,9 @@ function PublicSearch() {
               type="text"
               value={vehicleNumber}
               onChange={(e) =>
-                setVehicleNumber(e.target.value)
+                setVehicleNumber(
+                  e.target.value
+                )
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -255,16 +289,16 @@ function PublicSearch() {
               className="flex-1 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
             />
 
+
             <button
               type="button"
-              onClick={() => {
-                console.log("SEARCH BUTTON CLICKED");
-                handleSearch();
-              }}
+              onClick={handleSearch}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-8 py-3 rounded-xl font-semibold cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-8 py-3 rounded-xl font-semibold"
             >
-              {loading ? "Searching..." : "Search"}
+              {loading
+                ? "Searching..."
+                : "Search"}
             </button>
 
           </div>
@@ -293,7 +327,7 @@ function PublicSearch() {
 
 
             {/* ==================================
-                VERIFICATION HEADER
+                VERIFIED HEADER
             ================================== */}
 
             <div className="bg-white rounded-2xl shadow-md p-6">
@@ -335,117 +369,117 @@ function PublicSearch() {
                 🚗 Vehicle Details
               </summary>
 
+
               <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Vehicle Type
                   </p>
-
                   <p className="font-semibold mt-1">
                     {vehicle.vehicleType ||
                       "Not available"}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Brand
                   </p>
-
                   <p className="font-semibold mt-1">
                     {vehicle.brand ||
                       "Not available"}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Model
                   </p>
-
                   <p className="font-semibold mt-1">
                     {vehicle.model ||
                       "Not available"}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Color
                   </p>
-
                   <p className="font-semibold mt-1">
                     {vehicle.color ||
                       "Not available"}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Registration Date
                   </p>
-
                   <p className="font-semibold mt-1">
                     {formatDate(
                       vehicle.registrationDate
                     )}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Vehicle Age
                   </p>
-
                   <p className="font-semibold mt-1">
                     {getVehicleAge()}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
-                    Registration Province
+                    Engine Capacity
                   </p>
-
                   <p className="font-semibold mt-1">
-                    {vehicle.province ||
-                      "Not available"}
+                    {vehicle.engineCapacity
+                      ? `${vehicle.engineCapacity} cc`
+                      : "Not available"}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
-                    Registration Office
+                    Cylinders
                   </p>
-
                   <p className="font-semibold mt-1">
-                    {vehicle.office ||
+                    {vehicle.cylinders ||
                       "Not available"}
                   </p>
+                </div>
 
+
+                <div className="border rounded-xl p-4">
+                  <p className="text-gray-500 text-sm">
+                    Seating Capacity
+                  </p>
+                  <p className="font-semibold mt-1">
+                    {vehicle.seatingCapacity ||
+                      "Not available"}
+                  </p>
+                </div>
+
+
+                <div className="border rounded-xl p-4">
+                  <p className="text-gray-500 text-sm">
+                    Fuel Type
+                  </p>
+                  <p className="font-semibold mt-1">
+                    {vehicle.fuelType ||
+                      "Not available"}
+                  </p>
                 </div>
 
               </div>
@@ -466,6 +500,7 @@ function PublicSearch() {
                 👤 Ownership
               </summary>
 
+
               <div className="px-6 pb-6">
 
                 <div className="border rounded-xl p-5">
@@ -481,6 +516,7 @@ function PublicSearch() {
 
                 </div>
 
+
                 <div className="border rounded-xl p-5 mt-4">
 
                   <p className="text-gray-500 text-sm">
@@ -488,80 +524,7 @@ function PublicSearch() {
                   </p>
 
                   <p className="font-semibold text-green-600 mt-1">
-                    🟢 Verified Owner Vehicle
-                  </p>
-
-                </div>
-
-              </div>
-
-            </details>
-
-
-            {/* ==================================
-                UNDER THE HOOD
-            ================================== */}
-
-            <details className="bg-white rounded-2xl shadow-md">
-
-              <summary className="cursor-pointer p-6 text-xl font-bold">
-                🔧 Under the Hood
-              </summary>
-
-              <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <div className="border rounded-xl p-4">
-
-                  <p className="text-gray-500 text-sm">
-                    Engine Capacity
-                  </p>
-
-                  <p className="font-semibold mt-1">
-                    {vehicle.engineCapacity
-                      ? `${vehicle.engineCapacity} cc`
-                      : "Not available"}
-                  </p>
-
-                </div>
-
-
-                <div className="border rounded-xl p-4">
-
-                  <p className="text-gray-500 text-sm">
-                    Cylinders
-                  </p>
-
-                  <p className="font-semibold mt-1">
-                    {vehicle.cylinders ||
-                      "Not available"}
-                  </p>
-
-                </div>
-
-
-                <div className="border rounded-xl p-4">
-
-                  <p className="text-gray-500 text-sm">
-                    Seating Capacity
-                  </p>
-
-                  <p className="font-semibold mt-1">
-                    {vehicle.seatingCapacity ||
-                      "Not available"}
-                  </p>
-
-                </div>
-
-
-                <div className="border rounded-xl p-4">
-
-                  <p className="text-gray-500 text-sm">
-                    Fuel Type
-                  </p>
-
-                  <p className="font-semibold mt-1">
-                    {vehicle.fuelType ||
-                      "Not available"}
+                    🟢 Verified
                   </p>
 
                 </div>
@@ -581,28 +544,56 @@ function PublicSearch() {
                 🚨 Alerts
               </summary>
 
+
               <div className="px-6 pb-6 space-y-4">
 
-
-                {/* STOLEN */}
+                {/* STOLEN STATUS */}
 
                 <div className="border rounded-xl p-4">
 
                   <div className="flex justify-between items-center">
 
                     <p className="font-semibold">
-                      🚨 Stolen Status
+                      Stolen Status
                     </p>
 
                     <span
-                      className={`px-3 py-1 rounded-full text-sm ${vehicle.stolenStatus ===
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        vehicle.stolenStatus ===
                         "Reported Stolen"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-green-100 text-green-700"
-                        }`}
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                      }`}
                     >
                       {vehicle.stolenStatus ||
                         "Not Reported"}
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                {/* BLUEBOOK */}
+
+                <div className="border rounded-xl p-4">
+
+                  <div className="flex justify-between items-center">
+
+                    <p className="font-semibold">
+                      📘 Bluebook
+                    </p>
+
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${getStatusStyle(
+                        getDateStatus(
+                          vehicle.bluebookExpiry
+                        )
+                      )}`}
+                    >
+                      {getDateStatus(
+                        vehicle.bluebookExpiry
+                      )}
                     </span>
 
                   </div>
@@ -621,12 +612,11 @@ function PublicSearch() {
                     </p>
 
                     <span
-                      className={`px-3 py-1 rounded-full text-sm ${getStatusClass(
+                      className={`px-3 py-1 rounded-full text-sm ${getStatusStyle(
                         getDateStatus(
                           vehicle.insuranceExpiry
                         )
-                      )
-                        }`}
+                      )}`}
                     >
                       {getDateStatus(
                         vehicle.insuranceExpiry
@@ -649,43 +639,14 @@ function PublicSearch() {
                     </p>
 
                     <span
-                      className={`px-3 py-1 rounded-full text-sm ${getStatusClass(
+                      className={`px-3 py-1 rounded-full text-sm ${getStatusStyle(
                         getDateStatus(
                           vehicle.taxExpiry
                         )
-                      )
-                        }`}
+                      )}`}
                     >
                       {getDateStatus(
                         vehicle.taxExpiry
-                      )}
-                    </span>
-
-                  </div>
-
-                </div>
-
-
-                {/* BLUEBOOK */}
-
-                <div className="border rounded-xl p-4">
-
-                  <div className="flex justify-between items-center">
-
-                    <p className="font-semibold">
-                      📘 Bluebook
-                    </p>
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm ${getStatusClass(
-                        getDateStatus(
-                          vehicle.bluebookExpiry
-                        )
-                      )
-                        }`}
-                    >
-                      {getDateStatus(
-                        vehicle.bluebookExpiry
                       )}
                     </span>
 
@@ -708,66 +669,54 @@ function PublicSearch() {
                 📅 Important Dates
               </summary>
 
+
               <div className="px-6 pb-6 space-y-4">
 
-
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Registration Date
                   </p>
-
                   <p className="font-semibold mt-1">
                     {formatDate(
                       vehicle.registrationDate
                     )}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
                     Bluebook Expiry
                   </p>
-
                   <p className="font-semibold mt-1">
                     {formatDate(
                       vehicle.bluebookExpiry
                     )}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
-                    Insurance Valid Until
+                    Insurance Expiry
                   </p>
-
                   <p className="font-semibold mt-1">
                     {formatDate(
                       vehicle.insuranceExpiry
                     )}
                   </p>
-
                 </div>
 
 
                 <div className="border rounded-xl p-4">
-
                   <p className="text-gray-500 text-sm">
-                    Tax Paid Until
+                    Tax Expiry
                   </p>
-
                   <p className="font-semibold mt-1">
                     {formatDate(
                       vehicle.taxExpiry
                     )}
                   </p>
-
                 </div>
 
               </div>

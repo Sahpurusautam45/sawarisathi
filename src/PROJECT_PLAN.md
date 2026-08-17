@@ -61,7 +61,7 @@
 - [x] Add Vehicle
 - [x] Multiple Vehicle Support
 - [x] Vehicle Health Dashboard
-- [ ] switch language from english to nepani and from nepali to english
+- [x] switch language from english to nepani and from nepali to english
 
 ## Vehicle Dashboard
 
@@ -80,15 +80,15 @@
 
 ## Public Vehicle Lookup
 
-- [ ] Search Vehicle
+- [x] Search Vehicle
 - [x] Vehicle Information
-- [ ] Masked Owner Name
+- [x] Masked Owner Name
 - [x] Verification Badge
-- [ ] Stolen Status
+- [x] Stolen Status
 
 ## Vehicle Security
 
-- [ ] Report Stolen Vehicle
+- [x] Report Stolen Vehicle
 - [ ] Report Recovered Vehicle
 - [x] Admin Review
 - [ ] Public Alert Badge

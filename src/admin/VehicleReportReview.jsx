@@ -121,6 +121,10 @@ function VehicleReportReview() {
     try {
       setActionLoading(true);
 
+      // ==========================================
+      // APPROVE REPORT
+      // ==========================================
+
       const reportRef = doc(
         db,
         "vehicleReports",
@@ -134,21 +138,61 @@ function VehicleReportReview() {
         rejectionReason: null,
       });
 
-      alert("Report approved successfully.");
+
+      // ==========================================
+      // VEHICLE STOLEN REPORT
+      // ==========================================
+
+      if (
+        report.reportType === "Vehicle Stolen"
+      ) {
+
+        const publicVehicleRef = doc(
+          db,
+          "publicVehicles",
+          report.vehicleId
+        );
+
+        await updateDoc(
+          publicVehicleRef,
+          {
+            stolenStatus: "Reported Stolen",
+            stolenReportedAt:
+              serverTimestamp(),
+            updatedAt:
+              serverTimestamp(),
+          }
+        );
+      }
+
+
+      // ==========================================
+      // SUCCESS
+      // ==========================================
+
+      alert(
+        "Report approved successfully."
+      );
 
       navigate("/admin/vehicle-reports");
+
     } catch (error) {
+
       console.error(
         "Approve Report Error:",
         error
       );
 
-      alert("Failed to approve the report.");
+      alert(
+        "Failed to approve the report."
+      );
+
     } finally {
+
       setActionLoading(false);
+
     }
   };
-
   // ==========================================
   // LOADING
   // ==========================================
@@ -275,13 +319,12 @@ function VehicleReportReview() {
               </p>
 
               <span
-                className={`inline-block mt-2 px-4 py-2 rounded-full text-sm font-semibold ${
-                  report.status === "Pending"
+                className={`inline-block mt-2 px-4 py-2 rounded-full text-sm font-semibold ${report.status === "Pending"
                     ? "bg-yellow-100 text-yellow-700"
                     : report.status === "Approved"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
               >
                 {report.status || "Pending"}
               </span>

@@ -56,11 +56,29 @@ export const getDashboardStats = async () => {
       totalVehicles: vehiclesSnapshot.data().count,
       pendingVehicles: pendingSnapshot.data().count,
       verifiedVehicles: verifiedSnapshot.data().count,
+
+      // Vehicle Reports
+      totalReports:
+        (
+          await getCountFromServer(
+            collection(db, "vehicleReports")
+          )
+        ).data().count,
+
+      pendingReports:
+        (
+          await getCountFromServer(
+            query(
+              collection(db, "vehicleReports"),
+              where("status", "==", "Pending")
+            )
+          )
+        ).data().count,
     };
-  } catch (error) {
-    console.error("Dashboard Error:", error);
-    throw error;
-  }
+} catch (error) {
+  console.error("Dashboard Error:", error);
+  throw error;
+}
 };
 
 
@@ -305,7 +323,7 @@ export const syncVerifiedVehiclesToPublic =
           insuranceStatus:
             insurance
               ? insurance.status ||
-                "Submitted"
+              "Submitted"
               : "Not Added",
 
           insuranceExpiry:
@@ -317,7 +335,7 @@ export const syncVerifiedVehiclesToPublic =
           taxStatus:
             tax
               ? tax.status ||
-                "Submitted"
+              "Submitted"
               : "Not Added",
 
           taxExpiry:
@@ -398,7 +416,7 @@ export const syncVerifiedVehiclesToPublic =
         if (
           !privateVehicleSnap.exists() ||
           privateVehicleSnap.data().status !==
-            "Verified"
+          "Verified"
         ) {
 
           await deleteDoc(

@@ -32,6 +32,7 @@ function VehicleReview() {
   const [tax, setTax] = useState(null);
 
   const [actionLoading, setActionLoading] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
 
 
   // ==========================================
@@ -353,6 +354,20 @@ function VehicleReview() {
 
     if (!vehicle) return;
 
+    // ==========================================
+    // REJECTION REASON REQUIRED
+    // ==========================================
+
+    if (
+      status === "Rejected" &&
+      !rejectionReason.trim()
+    ) {
+      alert(
+        "Please provide a rejection reason."
+      );
+      return;
+    }
+
 
     const confirmed = window.confirm(
       `Are you sure you want to ${status.toLowerCase()} this vehicle?`
@@ -389,6 +404,11 @@ function VehicleReview() {
 
           updatedAt:
             serverTimestamp(),
+
+          rejectionReason:
+            status === "Rejected"
+              ? rejectionReason.trim()
+              : null,
         }
       );
 
@@ -978,6 +998,35 @@ function VehicleReview() {
               Approve the vehicle only after the
               submitted information has been checked.
             </p>
+
+            {/* =====================================
+                REJECTION REASON
+              ===================================== */}
+
+            {vehicle.status !== "Verified" && (
+              <div className="mt-6">
+
+                <label className="block font-semibold mb-2">
+                  Rejection Reason
+                </label>
+
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) =>
+                    setRejectionReason(e.target.value)
+                  }
+                  placeholder="Enter the reason if you reject this vehicle..."
+                  rows="4"
+                  className="w-full border rounded-xl p-4 resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+
+                <p className="text-sm text-gray-500 mt-2">
+                  A rejection reason is required when rejecting
+                  a vehicle.
+                </p>
+
+              </div>
+            )}
 
 
             <div className="flex flex-col md:flex-row gap-4 mt-6">

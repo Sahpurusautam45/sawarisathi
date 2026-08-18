@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase/firebase";
+import { createAdminActivity } from "../services/adminActivityService";
 import AdminLayout from "../components/admin/AdminLayout";
 import LoadingSpinner from "../components/LoadingSpinner";
 
@@ -92,6 +93,18 @@ function VehicleReportReview() {
         reviewedAt: serverTimestamp(),
       });
 
+      await createAdminActivity({
+        action: "Report Rejected",
+        entityType: "report",
+        entityId: reportId,
+        vehicleNumber:
+          report.vehicleNumber || null,
+        reportType:
+          report.reportType || null,
+        reason:
+          rejectionReason.trim(),
+      });
+
       alert("Report rejected successfully.");
 
       navigate("/admin/vehicle-reports");
@@ -169,6 +182,16 @@ function VehicleReportReview() {
       // ==========================================
       // SUCCESS
       // ==========================================
+
+      await createAdminActivity({
+        action: "Report Approved",
+        entityType: "report",
+        entityId: reportId,
+        vehicleNumber:
+          report.vehicleNumber || null,
+        reportType:
+          report.reportType || null,
+      });
 
       alert(
         "Report approved successfully."
@@ -320,10 +343,10 @@ function VehicleReportReview() {
 
               <span
                 className={`inline-block mt-2 px-4 py-2 rounded-full text-sm font-semibold ${report.status === "Pending"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : report.status === "Approved"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : report.status === "Approved"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
                   }`}
               >
                 {report.status || "Pending"}

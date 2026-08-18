@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase/firebase";
+import { createAdminActivity } from "../services/adminActivityService";
 import AdminLayout from "../components/admin/AdminLayout";
 import LoadingSpinner from "../components/LoadingSpinner";
 
@@ -422,10 +423,17 @@ function VehicleReview() {
 
         await createPublicVehicle();
 
+        await createAdminActivity({
+          action: "Vehicle Verified",
+          entityType: "vehicle",
+          entityId: vehicleId,
+          vehicleNumber:
+            vehicle.vehicleNumber || null,
+        });
+
         alert(
           "Vehicle verified successfully and added to public search!"
         );
-
       }
 
 
@@ -449,6 +457,15 @@ function VehicleReview() {
 
         }
 
+        await createAdminActivity({
+          action: "Vehicle Rejected",
+          entityType: "vehicle",
+          entityId: vehicleId,
+          vehicleNumber:
+            vehicle.vehicleNumber || null,
+          reason:
+            rejectionReason.trim(),
+        });
 
         alert(
           "Vehicle rejected."

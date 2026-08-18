@@ -30,3 +30,23 @@ Security rules
 Business model
 Future mobile app
 Milestones
+
+🇳🇵 SAWARISATHI
+      │
+      ├── 🚗 Vehicle System
+      │     ├── Registration
+      │     ├── Verification
+      │     └── Public Search
+      │
+      ├── 🚨 Report System
+      │     ├── Submit
+      │     ├── Approve
+      │     └── Reject + Reason
+      │
+      └── 👨‍💼 Admin System
+            ├── Dashboard
+            ├── Statistics
+            ├── Verification
+            ├── Reports
+            ├── Recent Activity
+            └── 📜 Audit Trail

@@ -35,6 +35,7 @@ import VehicleReview from "./admin/VehicleReview";
 import Users from "./admin/Users";
 import Reports from "./admin/Reports";
 import Settings from "./admin/Settings";
+import AdminAuditHistory from "./admin/AdminAuditHistory";
 
 function App() {
   return (
@@ -228,6 +229,15 @@ function App() {
           element={
             <ProtectedAdminRoute>
               <Settings />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/audit-history"
+          element={
+            <ProtectedAdminRoute>
+              <AdminAuditHistory />
             </ProtectedAdminRoute>
           }
         />

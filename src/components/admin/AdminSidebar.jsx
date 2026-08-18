@@ -5,6 +5,7 @@ import {
   Users,
   FileText,
   Settings,
+  History,
   LogOut,
   AlertTriangle,
 } from "lucide-react";
@@ -26,6 +27,11 @@ function AdminSidebar() {
       name: "Vehicle Reports",
       path: "/admin/vehicle-reports",
       icon: <AlertTriangle size={20} />,
+    },
+    {
+      name: "Audit History",
+      path: "/admin/audit-history",
+      icon: <History size={20} />,
     },
     {
       name: "Users",

@@ -158,7 +158,15 @@ function PublicSearch() {
       return "Not available";
     }
 
-    const date = new Date(value);
+    let date;
+
+    // Firestore Timestamp
+    if (typeof value?.toDate === "function") {
+      date = value.toDate();
+    } else {
+      // Normal date/string
+      date = new Date(value);
+    }
 
     if (isNaN(date.getTime())) {
       return "Not available";
@@ -354,6 +362,52 @@ function PublicSearch() {
               </div>
 
             </div>
+
+            {/* ==================================
+              STOLEN VEHICLE WARNING
+              ================================== */}
+
+            {vehicle.stolenStatus === "Reported Stolen" && (
+
+              <div className="bg-red-50 border-2 border-red-500 rounded-2xl shadow-md p-6">
+
+                <div className="flex items-start gap-4">
+
+                  <div className="text-4xl">
+                    🚨
+                  </div>
+
+                  <div>
+
+                    <h2 className="text-2xl font-bold text-red-700">
+                      VEHICLE REPORTED STOLEN
+                    </h2>
+
+                    <p className="text-red-600 mt-2 font-medium">
+                      This vehicle has an approved stolen-vehicle
+                      report in SawariSathi.
+                    </p>
+
+                    <p className="text-gray-700 mt-3">
+                      Vehicle Number:
+                      <span className="font-bold ml-2">
+                        {vehicle.vehicleNumber}
+                      </span>
+                    </p>
+
+                    <p className="text-sm text-gray-600 mt-3">
+                      Please verify the vehicle carefully and contact
+                      the appropriate authorities if you have
+                      information about this vehicle.
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            )}
 
 
             {/* ==================================
@@ -558,12 +612,11 @@ function PublicSearch() {
                     </p>
 
                     <span
-                      className={`px-3 py-1 rounded-full text-sm ${
-                        vehicle.stolenStatus ===
+                      className={`px-3 py-1 rounded-full text-sm ${vehicle.stolenStatus ===
                         "Reported Stolen"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-green-100 text-green-700"
-                      }`}
+                        ? "bg-red-100 text-red-700"
+                        : "bg-green-100 text-green-700"
+                        }`}
                     >
                       {vehicle.stolenStatus ||
                         "Not Reported"}

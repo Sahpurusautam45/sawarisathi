@@ -60,7 +60,21 @@ function ManualVehicleForm() {
 
     } catch (error) {
       console.error(error);
-      alert("Failed to add vehicle.");
+
+      if (
+        error.message ===
+        "VEHICLE_ALREADY_REGISTERED"
+      ) {
+        alert(
+          "🚨 This vehicle is already registered in SawariSathi."
+        );
+
+        return;
+      }
+
+      alert(
+        "Failed to add vehicle. Please try again."
+      );
     }
   };
 
@@ -231,7 +245,7 @@ function ManualVehicleForm() {
               placeholder="e.g. 149.86"
               value={engineCapacity}
               onChange={(e) => setEngineCapacity(e.target.value)}
-                className="w-full border rounded-lg p-3"
+              className="w-full border rounded-lg p-3"
             />
 
           </div>

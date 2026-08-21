@@ -69,7 +69,7 @@
 - [x] Bluebook Section
 - [x] Insurance Section
 - [ ] Documents Section
-- [ ] Vehicle History Section
+- [x] Vehicle History Section
 
 ## Vehicle Verification
 
@@ -91,7 +91,7 @@
 - [x] Report Stolen Vehicle
 - [ ] Report Recovered Vehicle
 - [x] Admin Review
-- [ ] Public Alert Badge
+- [x] Public Alert Badge
 
 ## Admin Dashboard
 

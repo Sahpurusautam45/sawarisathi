@@ -19,33 +19,100 @@ import {
 export const addVehicle = async (vehicleData) => {
   const user = auth.currentUser;
 
-  if (!user) throw new Error("User not logged in.");
+  if (!user) {
+    throw new Error("User not logged in.");
+  }
 
-  // Get user information
-  const userRef = doc(db, "users", user.uid);
+  // ==========================================
+  // NORMALIZE VEHICLE NUMBER
+  // ==========================================
+
+  const cleanVehicleNumber = (
+    vehicleData.vehicleNumber || ""
+  )
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+
+  if (!cleanVehicleNumber) {
+    throw new Error("Vehicle number is required.");
+  }
+
+  // ==========================================
+  // CHECK IF VEHICLE ALREADY EXISTS
+  // ==========================================
+
+  const existingVehicleQuery = query(
+    collection(db, "vehicles"),
+    where("vehicleNumber", "==", cleanVehicleNumber)
+  );
+
+  const existingVehicleSnapshot = await getDocs(
+    existingVehicleQuery
+  );
+
+  if (!existingVehicleSnapshot.empty) {
+    throw new Error(
+      "VEHICLE_ALREADY_REGISTERED"
+    );
+  }
+
+  // ==========================================
+  // GET USER INFORMATION
+  // ==========================================
+
+  const userRef = doc(
+    db,
+    "users",
+    user.uid
+  );
+
   const userSnap = await getDoc(userRef);
 
   if (!userSnap.exists()) {
-    throw new Error("User profile not found.");
+    throw new Error(
+      "User profile not found."
+    );
   }
 
   const userInfo = userSnap.data();
 
-  return await addDoc(collection(db, "vehicles"), {
-    ownerId: user.uid,
-    ownerName: userInfo.fullName,
-    ownerEmail: userInfo.email,
+  // ==========================================
+  // CREATE VEHICLE
+  // ==========================================
 
-    ...vehicleData,
+  return await addDoc(
+    collection(db, "vehicles"),
+    {
+      ownerId: user.uid,
 
-    status: "Pending",
-    remarks: "",
-    verifiedBy: "",
-    verifiedAt: null,
+      ownerName:
+        userInfo.fullName,
 
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+      ownerEmail:
+        userInfo.email,
+
+      ...vehicleData,
+
+      // Always store normalized number
+      vehicleNumber:
+        cleanVehicleNumber,
+
+      status: "Pending",
+
+      remarks: "",
+
+      verifiedBy: "",
+
+      verifiedAt: null,
+
+      createdAt:
+        serverTimestamp(),
+
+      updatedAt:
+        serverTimestamp(),
+    }
+  );
 };
 
 // =============================

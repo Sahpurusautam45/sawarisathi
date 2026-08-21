@@ -15,6 +15,7 @@ function AdminAuditHistory() {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [actionFilter, setActionFilter] = useState("All");
     // ==========================================
     // LOAD AUDIT HISTORY
     // ==========================================
@@ -66,8 +67,9 @@ function AdminAuditHistory() {
             .toLocaleString();
     };
 
+
     // ==========================================
-    // SEARCH
+    // SEARCH + ACTION FILTER
     // ==========================================
 
     const filteredActivities =
@@ -77,6 +79,22 @@ function AdminAuditHistory() {
                 searchTerm
                     .trim()
                     .toLowerCase();
+
+            // ======================================
+            // ACTION FILTER
+            // ======================================
+
+            const matchesAction =
+                actionFilter === "All" ||
+                activity.action === actionFilter;
+
+            if (!matchesAction) {
+                return false;
+            }
+
+            // ======================================
+            // SEARCH FILTER
+            // ======================================
 
             if (!search) {
                 return true;
@@ -140,7 +158,11 @@ function AdminAuditHistory() {
 
                     {/* SEARCH */}
 
-                    <div className="mb-6">
+                    {/* SEARCH + FILTER */}
+
+                    <div className="mb-6 flex flex-col md:flex-row gap-4">
+
+                        {/* SEARCH */}
 
                         <input
                             type="text"
@@ -149,8 +171,41 @@ function AdminAuditHistory() {
                                 setSearchTerm(e.target.value)
                             }
                             placeholder="🔍 Search vehicle, action, report type..."
-                            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                         />
+
+
+                        {/* ACTION FILTER */}
+
+                        <select
+                            value={actionFilter}
+                            onChange={(e) =>
+                                setActionFilter(e.target.value)
+                            }
+                            className="border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+
+                            <option value="All">
+                                All Actions
+                            </option>
+
+                            <option value="Vehicle Verified">
+                                Vehicle Verified
+                            </option>
+
+                            <option value="Vehicle Rejected">
+                                Vehicle Rejected
+                            </option>
+
+                            <option value="Report Approved">
+                                Report Approved
+                            </option>
+
+                            <option value="Report Rejected">
+                                Report Rejected
+                            </option>
+
+                        </select>
 
                     </div>
 

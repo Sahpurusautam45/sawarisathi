@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
     collection,
@@ -16,6 +17,7 @@ function AdminAuditHistory() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [actionFilter, setActionFilter] = useState("All");
+    const navigate = useNavigate();
     // ==========================================
     // LOAD AUDIT HISTORY
     // ==========================================
@@ -224,7 +226,30 @@ function AdminAuditHistory() {
 
                                     <div
                                         key={activity.id}
-                                        className="border rounded-xl p-5"
+                                        onClick={() => {
+
+                                            if (
+                                                activity.entityType ===
+                                                "vehicle"
+                                            ) {
+                                                navigate(
+                                                    `/admin/review/${activity.entityId}`
+                                                );
+
+                                                return;
+                                            }
+
+                                            if (
+                                                activity.entityType ===
+                                                "report"
+                                            ) {
+                                                navigate(
+                                                    `/admin/vehicle-reports/${activity.entityId}`
+                                                );
+                                            }
+
+                                        }}
+                                        className="border rounded-xl p-5 cursor-pointer hover:bg-slate-50 transition"
                                     >
 
                                         {/* ACTION */}

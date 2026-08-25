@@ -44,19 +44,53 @@ export const addVehicle = async (vehicleData) => {
 
   const existingVehicleQuery = query(
     collection(db, "vehicles"),
-    where("vehicleNumber", "==", cleanVehicleNumber)
+    where(
+      "vehicleNumber",
+      "==",
+      cleanVehicleNumber
+    )
   );
 
-  const existingVehicleSnapshot = await getDocs(
-    existingVehicleQuery
-  );
+  const existingVehicleSnapshot =
+    await getDocs(existingVehicleQuery);
 
-  if (!existingVehicleSnapshot.empty) {
-    throw new Error(
-      "VEHICLE_ALREADY_REGISTERED"
-    );
+  // Check every existing record
+  for (
+    const existingVehicleDoc
+    of existingVehicleSnapshot.docs
+  ) {
+    const existingVehicle =
+      existingVehicleDoc.data();
+
+    const existingStatus =
+      existingVehicle.status;
+
+    // ========================================
+    // VERIFIED VEHICLE
+    // ========================================
+
+    if (existingStatus === "Verified") {
+      throw new Error(
+        "VEHICLE_ALREADY_REGISTERED"
+      );
+    }
+
+    // ========================================
+    // PENDING VEHICLE
+    // ========================================
+
+    if (existingStatus === "Pending") {
+      throw new Error(
+        "VEHICLE_ALREADY_REGISTERED"
+      );
+    }
+
+    // ========================================
+    // REJECTED VEHICLE
+    // ========================================
+    // Rejected vehicles are allowed
+    // to be submitted again.
   }
-
   // ==========================================
   // GET USER INFORMATION
   // ==========================================

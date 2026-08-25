@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
+  collection,
+  addDoc,
   doc,
   getDoc,
   updateDoc,
-  setDoc,
-  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -33,6 +33,17 @@ function VehicleReview() {
   const [tax, setTax] = useState(null);
 
   const [actionLoading, setActionLoading] = useState(false);
+
+  // ==========================================
+  // SECTION VERIFICATION STATUS
+  // ==========================================
+
+  const [sectionStatus, setSectionStatus] = useState({
+    vehicle: "Pending",
+    bluebook: "Pending",
+    insurance: "Pending",
+    tax: "Pending",
+  });
   const [rejectionReason, setRejectionReason] = useState("");
 
 
@@ -40,22 +51,61 @@ function VehicleReview() {
   // MASK OWNER NAME
   // ==========================================
 
-  const maskOwnerName = (name) => {
-    if (!name) return "Not Available";
+  const maskOwnerName = (fullName = "") => {
+    const maskWord = (word) => {
+      if (!word) return "";
 
-    const parts = name.trim().split(/\s+/);
+      const length = word.length;
 
-    return parts
-      .map((part) => {
-        if (part.length <= 1) {
-          return part;
-        }
+      // 1 character
+      if (length === 1) {
+        return "*";
+      }
 
-        return (
-          part.charAt(0) +
-          "*".repeat(Math.max(1, part.length - 1))
-        );
-      })
+      // 2 characters
+      // Ram is not here — this is for names like "Om"
+      if (length === 2) {
+        return `${word[0]}*`;
+      }
+
+      // 3 characters
+      // Ram → R*m
+      if (length === 3) {
+        return `${word[0]}*${word.slice(-1)}`;
+      }
+
+      // 4 characters
+      // Hari → H*ri
+      if (length === 4) {
+        return `${word[0]}*${word.slice(-2)}`;
+      }
+
+      // 5–6 characters
+      // Suman → Su*an
+      // Kumar → Ku*ar
+      const visibleEachSide =
+        length <= 6 ? 2 : length <= 9 ? 2 : 3;
+
+      const firstPart =
+        word.slice(0, visibleEachSide);
+
+      const lastPart =
+        word.slice(-visibleEachSide);
+
+      const maskedLength =
+        length - (visibleEachSide * 2);
+
+      return (
+        firstPart +
+        "*".repeat(Math.max(1, maskedLength)) +
+        lastPart
+      );
+    };
+
+    return fullName
+      .trim()
+      .split(/\s+/)
+      .map(maskWord)
       .join(" ");
   };
 
@@ -403,13 +453,53 @@ function VehicleReview() {
               ? serverTimestamp()
               : null,
 
-          updatedAt:
-            serverTimestamp(),
-
           rejectionReason:
             status === "Rejected"
               ? rejectionReason.trim()
               : null,
+
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+      // ==========================================
+      // ADMIN ACTIVITY LOG
+      // ==========================================
+
+      await addDoc(
+        collection(db, "adminActivity"),
+        {
+          action:
+            status === "Verified"
+              ? "Vehicle Verified"
+              : "Vehicle Rejected",
+
+          entityType: "vehicle",
+
+          vehicleId: vehicleId,
+
+          vehicleNumber:
+            vehicle.vehicleNumber || "",
+
+          ownerId:
+            vehicle.ownerId || "",
+
+          ownerName:
+            vehicle.ownerName || "",
+
+          ownerEmail:
+            vehicle.ownerEmail || "",
+
+          status: status,
+
+          reason:
+            status === "Rejected"
+              ? rejectionReason.trim()
+              : null,
+
+          createdAt:
+            serverTimestamp(),
         }
       );
 
@@ -727,75 +817,65 @@ function VehicleReview() {
                   </h3>
 
                   {bluebookLoading ? (
-
                     <span className="text-gray-500 text-sm">
                       Loading...
                     </span>
-
-                  ) : bluebook ? (
-
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                      Submitted
-                    </span>
-
-                  ) : (
-
+                  ) : !bluebook ? (
                     <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
                       Not Added
                     </span>
-
+                  ) : (
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${sectionStatus.bluebook === "Verified"
+                        ? "bg-green-100 text-green-700"
+                        : sectionStatus.bluebook === "Rejected"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                        }`}
+                    >
+                      {sectionStatus.bluebook}
+                    </span>
                   )}
 
                 </div>
 
 
-                {bluebookLoading ? (
+                bluebookLoading ? (
 
-                  <p className="text-gray-500 mt-4">
-                    Loading Bluebook information...
-                  </p>
+                <p className="text-gray-500 mt-4">
+                  Loading Bluebook information...
+                </p>
 
-                ) : bluebook ? (
+                ) : {bluebook && (
+                  <div className="mt-5 flex gap-3">
 
-                  <div className="mt-5 space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSectionStatus((prev) => ({
+                          ...prev,
+                          bluebook: "Verified",
+                        }));
+                      }}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl font-semibold"
+                    >
+                      ✓ Verify Bluebook
+                    </button>
 
-                    <p>
-                      <strong>
-                        Bluebook Number:
-                      </strong>{" "}
-                      {bluebook.bluebookNumber || "—"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Registration Date:
-                      </strong>{" "}
-                      {bluebook.registrationDate || "—"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Expiry Date:
-                      </strong>{" "}
-                      {bluebook.expiryDate || "—"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Status:
-                      </strong>{" "}
-                      {bluebook.status ||
-                        "Pending Verification"}
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSectionStatus((prev) => ({
+                          ...prev,
+                          bluebook: "Rejected",
+                        }));
+                      }}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl font-semibold"
+                    >
+                      ✕ Reject Bluebook
+                    </button>
 
                   </div>
-
-                ) : (
-
-                  <p className="text-red-600 mt-4">
-                    No Bluebook information submitted.
-                  </p>
-
                 )}
 
               </div>
@@ -814,82 +894,65 @@ function VehicleReview() {
                   </h3>
 
                   {insuranceLoading ? (
-
                     <span className="text-gray-500 text-sm">
                       Loading...
                     </span>
-
-                  ) : insurance ? (
-
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                      Submitted
-                    </span>
-
-                  ) : (
-
+                  ) : !insurance ? (
                     <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
                       Not Added
                     </span>
-
+                  ) : (
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${sectionStatus.insurance === "Verified"
+                        ? "bg-green-100 text-green-700"
+                        : sectionStatus.insurance === "Rejected"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                        }`}
+                    >
+                      {sectionStatus.insurance}
+                    </span>
                   )}
 
                 </div>
 
 
-                {insuranceLoading ? (
+                insuranceLoading ? (
 
                   <p className="text-gray-500 mt-4">
                     Loading Insurance information...
                   </p>
 
-                ) : insurance ? (
+                ) : { insurance && (
+                  <div className="mt-5 flex gap-3">
 
-                  <div className="mt-5 space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSectionStatus((prev) => ({
+                          ...prev,
+                          insurance: "Verified",
+                        }));
+                      }}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl font-semibold"
+                    >
+                      ✓ Verify Insurance
+                    </button>
 
-                    <p>
-                      <strong>
-                        Category:
-                      </strong>{" "}
-                      {insurance.category || "—"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Company:
-                      </strong>{" "}
-                      {insurance.company || "—"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Policy Number:
-                      </strong>{" "}
-                      {insurance.policyNumber || "—"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Valid Until:
-                      </strong>{" "}
-                      {insurance.validUntil || "—"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Status:
-                      </strong>{" "}
-                      {insurance.status ||
-                        "Pending Verification"}
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSectionStatus((prev) => ({
+                          ...prev,
+                          insurance: "Rejected",
+                        }));
+                      }}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl font-semibold"
+                    >
+                      ✕ Reject Insurance
+                    </button>
 
                   </div>
-
-                ) : (
-
-                  <p className="text-red-600 mt-4">
-                    No Insurance information submitted.
-                  </p>
-
                 )}
 
               </div>
@@ -908,23 +971,24 @@ function VehicleReview() {
                   </h3>
 
                   {taxLoading ? (
-
                     <span className="text-gray-500 text-sm">
                       Loading...
                     </span>
-
-                  ) : tax ? (
-
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                      Submitted
-                    </span>
-
-                  ) : (
-
+                  ) : !tax ? (
                     <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
                       Not Added
                     </span>
-
+                  ) : (
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${sectionStatus.tax === "Verified"
+                        ? "bg-green-100 text-green-700"
+                        : sectionStatus.tax === "Rejected"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                        }`}
+                    >
+                      {sectionStatus.tax}
+                    </span>
                   )}
 
                 </div>

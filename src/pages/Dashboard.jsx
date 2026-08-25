@@ -162,23 +162,80 @@ function Dashboard() {
                 <div className="mt-4">
 
                   <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                      vehicle.status === "Verified"
-                        ? "bg-green-100 text-green-700"
-                        : vehicle.status === "Rejected"
+                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${vehicle.status === "Verified"
+                      ? "bg-green-100 text-green-700"
+                      : vehicle.status === "Rejected"
                         ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
-                    }`}
+                      }`}
                   >
                     {vehicle.status === "Verified"
                       ? t("verified")
                       : vehicle.status === "Rejected"
-                      ? t("rejected")
-                      : t("pending")}
+                        ? t("rejected")
+                        : t("pending")}
                   </span>
 
                 </div>
 
+                {/* Status Message */}
+
+                {vehicle.status === "Pending" && (
+                  <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                    <p className="text-sm font-semibold text-yellow-800">
+                      ⏳ Verification Pending
+                    </p>
+
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Your vehicle is waiting for Admin verification.
+                    </p>
+                  </div>
+                )}
+
+
+                {vehicle.status === "Verified" && (
+                  <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
+                    <p className="text-sm font-semibold text-green-800">
+                      ✓ Vehicle Verified
+                    </p>
+
+                    <p className="text-sm text-green-700 mt-1">
+                      Your vehicle has been successfully verified.
+                    </p>
+                  </div>
+                )}
+
+
+                {vehicle.status === "Rejected" && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+
+                    <p className="text-sm font-semibold text-red-800">
+                      ✕ Vehicle Rejected
+                    </p>
+
+                    <p className="text-xs font-semibold text-red-700 mt-2">
+                      Reason
+                    </p>
+
+                    <p className="text-sm text-red-700 mt-1">
+                      {vehicle.rejectionReason
+                        ? vehicle.rejectionReason
+                        : "Details not submitted"}
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        navigate(
+                          `/add-vehicle/manual?resubmit=${vehicle.id}`
+                        )
+                      }
+                      className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold transition"
+                    >
+                      🔄 Resubmit Vehicle
+                    </button>
+
+                  </div>
+                )}
 
                 {/* Manage Vehicle */}
 

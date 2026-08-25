@@ -19,17 +19,17 @@ function AdminSidebar() {
       icon: <LayoutDashboard size={20} />,
     },
     {
-      name: "Vehicle Verification",
+      name: "Vehicle Management",
       path: "/admin/vehicle-verification",
       icon: <Car size={20} />,
     },
     {
-      name: "Vehicle Reports",
+      name: "Reported Vehicles",
       path: "/admin/vehicle-reports",
       icon: <AlertTriangle size={20} />,
     },
     {
-      name: "Audit History",
+      name: "Admin Activity",
       path: "/admin/audit-history",
       icon: <History size={20} />,
     },

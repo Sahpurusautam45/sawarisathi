@@ -13,6 +13,10 @@ import {
   setDoc,
   deleteDoc,
   serverTimestamp,
+  collection,
+  getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 
 import { db } from "../firebase/firebase";
@@ -38,6 +42,14 @@ function VehicleReview() {
 
   const isViewMode =
     searchParams.get("mode") === "view";
+  // ==========================================
+  // NOTIFICATION DOCUMENT TO REVIEW
+  // ==========================================
+
+  const requestedDocument =
+    searchParams
+      .get("document")
+      ?.toLowerCase() || "";
 
 
   // ==========================================
@@ -91,6 +103,15 @@ function VehicleReview() {
   const [actionLoading, setActionLoading] =
     useState(false);
 
+  const [rejectionModal, setRejectionModal] =
+    useState({
+      open: false,
+      section: "",
+    });
+
+  const [sectionRejectionReason, setSectionRejectionReason] =
+    useState("");
+
 
   // ==========================================
   // SECTION STATUS
@@ -137,6 +158,15 @@ function VehicleReview() {
 
   const maskOwnerName = (fullName = "") => {
 
+    const safeName =
+      typeof fullName === "string"
+        ? fullName
+        : String(fullName ?? "");
+
+    if (!safeName.trim()) {
+      return "";
+    }
+
     const maskWord = (word) => {
 
       if (!word) {
@@ -171,8 +201,8 @@ function VehicleReview() {
         length <= 6
           ? 2
           : length <= 9
-          ? 2
-          : 3;
+            ? 2
+            : 3;
 
 
       const firstPart =
@@ -206,7 +236,7 @@ function VehicleReview() {
     };
 
 
-    return fullName
+    return safeName
       .trim()
       .split(/\s+/)
       .map(maskWord)
@@ -219,6 +249,7 @@ function VehicleReview() {
   // ==========================================
 
   useEffect(() => {
+
 
     const loadVehicle = async () => {
 
@@ -424,10 +455,120 @@ function VehicleReview() {
 
   }, [vehicleId]);
 
+  // ==========================================
+  // FOCUS REQUESTED DOCUMENT
+  // ==========================================
+
+  useEffect(() => {
+
+    if (!requestedDocument || loading) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+
+      const section = document.getElementById(
+        requestedDocument
+      );
+
+      if (section) {
+
+        section.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        section.classList.add(
+          "ring-4",
+          "ring-blue-400",
+          "rounded-xl"
+        );
+
+        setTimeout(() => {
+
+          section.classList.remove(
+            "ring-4",
+            "ring-blue-400",
+            "rounded-xl"
+          );
+
+        }, 3000);
+      }
+
+    }, 500);
+
+    return () => clearTimeout(timer);
+
+  }, [requestedDocument, loading]);
+
 
   // ==========================================
   // UPDATE INDIVIDUAL SECTION STATUS
   // ==========================================
+
+  // ==========================================
+  // REMOVE COMPLETED DOCUMENT NOTIFICATION
+  // ==========================================
+
+  const removeDocumentNotification = async (
+    documentType
+  ) => {
+
+    if (!vehicleId || !documentType) {
+      return;
+    }
+
+    try {
+
+      const notificationsRef =
+        collection(
+          db,
+          "adminNotifications"
+        );
+
+      const notificationQuery =
+        query(
+          notificationsRef,
+          where(
+            "vehicleId",
+            "==",
+            vehicleId
+          ),
+          where(
+            "documentType",
+            "==",
+            documentType
+          )
+        );
+
+      const snapshot =
+        await getDocs(
+          notificationQuery
+        );
+
+      // Delete matching notifications
+      await Promise.all(
+        snapshot.docs.map(
+          (notificationDoc) =>
+            deleteDoc(
+              notificationDoc.ref
+            )
+        )
+      );
+
+      console.log(
+        `✅ ${documentType} notification removed.`
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Notification cleanup error:",
+        error
+      );
+
+    }
+  };
 
   const updateSectionStatus = async (
     section,
@@ -438,63 +579,133 @@ function VehicleReview() {
       return;
     }
 
+    // ==========================================
+    // REJECTION REASON
+    // ==========================================
+
+    let reason = "";
+
+    if (status === "Rejected") {
+
+      reason = window.prompt(
+        `Enter the reason for rejecting ${section}:`
+      );
+
+      if (reason === null) {
+        return;
+      }
+
+      reason = reason.trim();
+
+      if (!reason) {
+        alert(
+          "Please provide a rejection reason."
+        );
+        return;
+      }
+    }
+
+    // ==========================================
+    // CONFIRM ACTION
+    // ==========================================
+
+    const confirmed = window.confirm(
+      `Are you sure you want to ${status.toLowerCase()} ${section}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
 
     try {
 
       setActionLoading(true);
 
+      const vehicleRef = doc(
+        db,
+        "vehicles",
+        vehicleId
+      );
 
-      const vehicleRef =
-        doc(
-          db,
-          "vehicles",
-          vehicleId
-        );
-
+      // ========================================
+      // DATA TO SAVE
+      // ========================================
 
       const updateData = {
 
         [`${section}Status`]:
           status,
 
+        [`${section}RejectionReason`]:
+          status === "Rejected"
+            ? reason
+            : null,
+
         updatedAt:
           serverTimestamp(),
       };
 
+      // ========================================
+      // SAVE TO FIREBASE
+      // ========================================
 
       await updateDoc(
         vehicleRef,
         updateData
       );
+      // ========================================
+      // COMPLETE ADMIN NOTIFICATION
+      // ========================================
 
+      if (
+        status === "Verified" ||
+        status === "Rejected"
+      ) {
 
-      // Update screen immediately
+        const notificationDocumentType =
+          section === "bluebook"
+            ? "Bluebook"
+            : section === "insurance"
+              ? "Insurance"
+              : section === "tax"
+                ? "Tax"
+                : null;
+
+        if (notificationDocumentType) {
+
+          await removeDocumentNotification(
+            notificationDocumentType
+          );
+
+        }
+
+      }
+
+      // ========================================
+      // UPDATE SCREEN IMMEDIATELY
+      // ========================================
 
       setSectionStatus(
         (previous) => ({
           ...previous,
-          [section]:
-            status,
+          [section]: status,
         })
       );
-
 
       setVehicle(
         (previous) => ({
           ...previous,
-          [`${section}Status`]:
-            status,
+          [`${section}Status`]: status,
+          [`${section}RejectionReason`]:
+            status === "Rejected"
+              ? reason
+              : null,
         })
       );
 
-
       alert(
-        `${
-          section.charAt(0).toUpperCase() +
-          section.slice(1)
-        } marked as ${status}.`
+        `${section.charAt(0).toUpperCase() + section.slice(1)} marked as ${status}.`
       );
-
 
     } catch (error) {
 
@@ -503,11 +714,9 @@ function VehicleReview() {
         error
       );
 
-
       alert(
         "Failed to update section status."
       );
-
 
     } finally {
 
@@ -1317,7 +1526,10 @@ function VehicleReview() {
                   BLUEBOOK
               ================================= */}
 
-              <div className="border rounded-xl p-5">
+              <div
+                id="bluebook"
+                className="border rounded-xl p-5"
+              >
 
                 <div className="flex justify-between items-center">
 
@@ -1414,42 +1626,42 @@ function VehicleReview() {
 
                     {/* ADMIN CONTROLS */}
 
-                    {!isViewMode && (
+                    {!isViewMode &&
+                      sectionStatus.bluebook === "Pending" && (
 
-                      <div className="mt-5 flex gap-3">
+                        <div className="mt-5 flex gap-3">
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateSectionStatus(
-                              "bluebook",
-                              "Verified"
-                            )
-                          }
-                          disabled={actionLoading}
-                          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
-                        >
-                          ✓ Verify Bluebook
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateSectionStatus(
+                                "bluebook",
+                                "Verified"
+                              )
+                            }
+                            disabled={actionLoading}
+                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
+                          >
+                            ✓ Verify Bluebook
+                          </button>
 
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateSectionStatus(
+                                "bluebook",
+                                "Rejected"
+                              )
+                            }
+                            disabled={actionLoading}
+                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
+                          >
+                            ✕ Reject Bluebook
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateSectionStatus(
-                              "bluebook",
-                              "Rejected"
-                            )
-                          }
-                          disabled={actionLoading}
-                          className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
-                        >
-                          ✕ Reject Bluebook
-                        </button>
+                        </div>
 
-                      </div>
-
-                    )}
+                      )}
 
                   </div>
 
@@ -1468,7 +1680,10 @@ function VehicleReview() {
                   INSURANCE
               ================================= */}
 
-              <div className="border rounded-xl p-5">
+              <div
+                id="insurance"
+                className="border rounded-xl p-5"
+              >
 
                 <div className="flex justify-between items-center">
 
@@ -1536,42 +1751,43 @@ function VehicleReview() {
                     </p>
 
 
-                    {!isViewMode && (
+                    {!isViewMode &&
+                      sectionStatus.insurance === "Pending" && (
 
-                      <div className="mt-5 flex gap-3">
+                        <div className="mt-5 flex gap-3">
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateSectionStatus(
-                              "insurance",
-                              "Verified"
-                            )
-                          }
-                          disabled={actionLoading}
-                          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
-                        >
-                          ✓ Verify Insurance
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateSectionStatus(
+                                "insurance",
+                                "Verified"
+                              )
+                            }
+                            disabled={actionLoading}
+                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
+                          >
+                            ✓ Verify Insurance
+                          </button>
 
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateSectionStatus(
-                              "insurance",
-                              "Rejected"
-                            )
-                          }
-                          disabled={actionLoading}
-                          className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
-                        >
-                          ✕ Reject Insurance
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateSectionStatus(
+                                "insurance",
+                                "Rejected"
+                              )
+                            }
+                            disabled={actionLoading}
+                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
+                          >
+                            ✕ Reject Insurance
+                          </button>
 
-                      </div>
+                        </div>
 
-                    )}
+                      )}
 
                   </div>
 
@@ -1590,7 +1806,10 @@ function VehicleReview() {
                   VEHICLE TAX
               ================================= */}
 
-              <div className="border rounded-xl p-5">
+              <div
+                id="tax"
+                className="border rounded-xl p-5"
+              >
 
                 <div className="flex justify-between items-center">
 
@@ -1649,42 +1868,43 @@ function VehicleReview() {
                     </p>
 
 
-                    {!isViewMode && (
+                    {!isViewMode &&
+                      sectionStatus.tax === "Pending" && (
 
-                      <div className="mt-5 flex gap-3">
+                        <div className="mt-5 flex gap-3">
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateSectionStatus(
-                              "tax",
-                              "Verified"
-                            )
-                          }
-                          disabled={actionLoading}
-                          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
-                        >
-                          ✓ Verify Tax
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateSectionStatus(
+                                "tax",
+                                "Verified"
+                              )
+                            }
+                            disabled={actionLoading}
+                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
+                          >
+                            ✓ Verify Tax
+                          </button>
 
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateSectionStatus(
-                              "tax",
-                              "Rejected"
-                            )
-                          }
-                          disabled={actionLoading}
-                          className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
-                        >
-                          ✕ Reject Tax
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateSectionStatus(
+                                "tax",
+                                "Rejected"
+                              )
+                            }
+                            disabled={actionLoading}
+                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-2 rounded-xl font-semibold"
+                          >
+                            ✕ Reject Tax
+                          </button>
 
-                      </div>
+                        </div>
 
-                    )}
+                      )}
 
                   </div>
 
@@ -1831,7 +2051,9 @@ function VehicleReview() {
 
     </AdminLayout>
   );
+
 }
+
 
 
 export default VehicleReview;

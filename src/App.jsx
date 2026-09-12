@@ -180,6 +180,15 @@ function App() {
         />
 
         <Route
+          path="/admin/vehicle-review/:vehicleId"
+          element={
+            <ProtectedAdminRoute>
+              <VehicleReview />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
           path="/admin/vehicle-reports"
           element={
             <ProtectedAdminRoute>

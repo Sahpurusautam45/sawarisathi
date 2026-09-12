@@ -29,6 +29,11 @@ function VehicleDetails() {
   const [taxExists, setTaxExists] = useState(false);
   const [documentsExists, setDocumentsExists] = useState(false);
 
+  const [bluebookStatus, setBluebookStatus] = useState("Not Added");
+  const [insuranceStatus, setInsuranceStatus] = useState("Not Added");
+  const [taxStatus, setTaxStatus] = useState("Not Added");
+  const [documentsStatus, setDocumentsStatus] = useState("Not Added");
+
   const [bluebookDetails, setBluebookDetails] = useState(null);
 
   const [showReportForm, setShowReportForm] = useState(false);
@@ -65,10 +70,17 @@ function VehicleDetails() {
           return;
         }
 
-        setVehicle({
+        const vehicleData = {
           id: vehicleSnap.id,
           ...vehicleSnap.data(),
-        });
+        };
+
+        setVehicle(vehicleData);
+
+        console.log(
+          "VEHICLE FROM FIREBASE:",
+          vehicleData
+        );
 
         // ==========================================
         // HELPER
@@ -138,7 +150,30 @@ function VehicleDetails() {
         setInsuranceExists(!!insuranceData);
         setTaxExists(!!taxData);
         setDocumentsExists(!!documentsData);
-        setBluebookDetails(bluebookData);
+
+        setBluebookStatus(
+          vehicleData.bluebookStatus ||
+          (bluebookData ? "Pending Verification" : "Not Added")
+        );
+
+        setInsuranceStatus(
+          vehicleData.insuranceStatus ||
+          (insuranceData ? "Pending Verification" : "Not Added")
+        );
+
+        setTaxStatus(
+          vehicleData.taxStatus ||
+          (taxData ? "Pending Verification" : "Not Added")
+        );
+
+        setDocumentsStatus(
+          vehicleData.documentsStatus ||
+          (documentsData ? "Pending Verification" : "Not Added")
+        );
+
+        setBluebookDetails(
+          bluebookData
+        );
 
       } catch (error) {
         console.error("Vehicle Details Error:", error);
@@ -267,513 +302,529 @@ function VehicleDetails() {
     return <LoadingSpinner />;
   }
 
-      // ==========================================
-      // VEHICLE NOT FOUND
-      // ==========================================
+  // ==========================================
+  // VEHICLE NOT FOUND
+  // ==========================================
 
-      if (!vehicle) {
-        return (
-          <div className="min-h-screen flex items-center justify-center">
+  if (!vehicle) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
 
-            <div className="text-center">
+        <div className="text-center">
 
-              <div className="text-6xl">
-                🚗
-              </div>
-
-              <h2 className="text-2xl font-bold mt-4">
-                {t("vehicleNotFound")}
-              </h2>
-
-              <p className="text-gray-500 mt-2">
-                {t("vehicleUnavailable")}
-              </p>
-
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
-              >
-                {t("backToDashboard")}
-              </button>
-
-            </div>
-
+          <div className="text-6xl">
+            🚗
           </div>
-        );
-      }
 
-      return (
-        <div className="min-h-screen bg-slate-100 p-8">
+          <h2 className="text-2xl font-bold mt-4">
+            {t("vehicleNotFound")}
+          </h2>
 
-          <div className="max-w-5xl mx-auto">
+          <p className="text-gray-500 mt-2">
+            {t("vehicleUnavailable")}
+          </p>
 
-            <div className="bg-white rounded-2xl shadow-lg p-8">
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+          >
+            {t("backToDashboard")}
+          </button>
 
-              {/* ==========================================
+        </div>
+
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-100 p-8">
+
+      <div className="max-w-5xl mx-auto">
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard")}
+          className="mb-6 bg-white border px-5 py-3 rounded-xl hover:bg-slate-100 transition font-semibold"
+        >
+          ← Back to Dashboard
+        </button>
+
+
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+
+          {/* ==========================================
               VEHICLE HEADER
           ========================================== */}
 
-              <h1 className="text-4xl font-bold">
-                🚗 {vehicle.brand} {vehicle.model}
-              </h1>
+          <h1 className="text-4xl font-bold">
+            🚗 {vehicle.brand} {vehicle.model}
+          </h1>
 
-              <p className="text-gray-500 mt-2">
-                {vehicle.vehicleNumber}
-              </p>
+          <p className="text-gray-500 mt-2">
+            {vehicle.vehicleNumber}
+          </p>
 
 
-              {/* ==========================================
+          {/* ==========================================
               VEHICLE INFORMATION
           ========================================== */}
 
-              <div className="mt-6 grid grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-2 gap-4">
 
-                <div>
-                  <strong>{t("vehicleType")}</strong>
-                  <p>{vehicle.vehicleType}</p>
-                </div>
+            <div>
+              <strong>{t("vehicleType")}</strong>
+              <p>{vehicle.vehicleType}</p>
+            </div>
 
-                <div>
-                  <strong>{t("brand")}</strong>
-                  <p>{vehicle.brand}</p>
-                </div>
+            <div>
+              <strong>{t("brand")}</strong>
+              <p>{vehicle.brand}</p>
+            </div>
 
-                <div>
-                  <strong>{t("model")}</strong>
-                  <p>{vehicle.model}</p>
-                </div>
+            <div>
+              <strong>{t("model")}</strong>
+              <p>{vehicle.model}</p>
+            </div>
 
-                <div>
-                  <strong>{t("color")}</strong>
-                  <p>{vehicle.color}</p>
-                </div>
+            <div>
+              <strong>{t("color")}</strong>
+              <p>{vehicle.color}</p>
+            </div>
 
-                <div>
-                  <strong>Engine Capacity</strong>
-                  <p>
-                    {bluebookDetails?.engineCapacity
-                      ? `${bluebookDetails.engineCapacity} CC`
-                      : "Not available"}
-                  </p>
-                </div>
+            <div>
+              <strong>Engine Capacity</strong>
+              <p>
+                {bluebookDetails?.engineCapacity
+                  ? `${bluebookDetails.engineCapacity} CC`
+                  : "Not available"}
+              </p>
+            </div>
 
-                <div>
-                  <strong>Cylinders</strong>
-                  <p>
-                    {bluebookDetails?.cylinders || "Not available"}
-                  </p>
-                </div>
+            <div>
+              <strong>Cylinders</strong>
+              <p>
+                {bluebookDetails?.cylinders || "Not available"}
+              </p>
+            </div>
 
-                <div>
-                  <strong>Seating Capacity</strong>
-                  <p>
-                    {bluebookDetails?.["Seating Capacity"] || "Not available"}
-                  </p>
-                </div>
+            <div>
+              <strong>Seating Capacity</strong>
+              <p>
+                {bluebookDetails?.["Seating Capacity"] || "Not available"}
+              </p>
+            </div>
 
-                <div>
-                  <strong>Fuel Type</strong>
-                  <p>
-                    {bluebookDetails?.["Fuel Type"] || "Not available"}
-                  </p>
-                </div>
-
-
-
-                <div>
-                  <strong>{t("status")}</strong>
-
-                  <p className="text-yellow-600">
-                    {vehicle.status || t("pending")}
-                  </p>
-                </div>
-
-              </div>
+            <div>
+              <strong>Fuel Type</strong>
+              <p>
+                {bluebookDetails?.["Fuel Type"] || "Not available"}
+              </p>
+            </div>
 
 
-              {/* ==========================================
+
+            <div>
+              <strong>{t("status")}</strong>
+
+              <p className="text-yellow-600">
+                {vehicle.status || t("pending")}
+              </p>
+            </div>
+
+          </div>
+
+
+          {/* ==========================================
               VEHICLE RECORDS
           ========================================== */}
 
-              <div className="mt-10">
+          <div className="mt-10">
 
-                <div className="mb-6">
+            <div className="mb-6">
 
-                  <h2 className="text-2xl font-bold">
-                    📂 {t("vehicleRecords")}
-                  </h2>
+              <h2 className="text-2xl font-bold">
+                📂 {t("vehicleRecords")}
+              </h2>
 
-                  <p className="text-gray-500 mt-1">
-                    {t("manageOfficialDocuments")}
-                  </p>
+              <p className="text-gray-500 mt-1">
+                {t("manageOfficialDocuments")}
+              </p>
 
-                </div>
+            </div>
 
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                  {/* ======================================
+              {/* ======================================
                   BLUEBOOK
               ====================================== */}
 
-                  <div
-                    onClick={() =>
-                      navigate(
-                        `/vehicle/${vehicleId}/bluebook`
-                      )
-                    }
-                    className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              <div
+                onClick={() =>
+                  navigate(
+                    `/vehicle/${vehicleId}/bluebook`
+                  )
+                }
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+
+                <div className="flex justify-between items-center">
+
+                  <h3 className="text-xl font-bold">
+                    📘 {t("bluebook")}
+                  </h3>
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${bluebookStatus === "Verified"
+                      ? "bg-green-100 text-green-700"
+                      : bluebookStatus === "Rejected"
+                        ? "bg-red-100 text-red-700"
+                        : bluebookStatus === "Pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
                   >
+                    {bluebookExists
+                      ? bluebookStatus
+                      : "Not Added"}
+                  </span>
 
-                    <div className="flex justify-between items-center">
+                </div>
 
-                      <h3 className="text-xl font-bold">
-                        📘 {t("bluebook")}
-                      </h3>
+                <p className="text-gray-500 mt-4">
+                  {bluebookExists
+                    ? t("manageBluebook")
+                    : t("addBluebook")}
+                </p>
 
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${bluebookExists
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                          }`}
-                      >
-                        {bluebookExists
-                          ? t("added")
-                          : t("notAdded")}
-                      </span>
+                <p className="text-blue-700 mt-6 font-semibold">
+                  {t("clickToManage")}
+                </p>
 
-                    </div>
-
-                    <p className="text-gray-500 mt-4">
-                      {bluebookExists
-                        ? t("manageBluebook")
-                        : t("addBluebook")}
-                    </p>
-
-                    <p className="text-blue-700 mt-6 font-semibold">
-                      {t("clickToManage")}
-                    </p>
-
-                  </div>
+              </div>
 
 
-                  {/* ======================================
+              {/* ======================================
                   INSURANCE
               ====================================== */}
 
-                  <div
-                    onClick={() =>
-                      navigate(
-                        `/vehicle/${vehicleId}/insurance`
-                      )
-                    }
-                    className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              <div
+                onClick={() =>
+                  navigate(
+                    `/vehicle/${vehicleId}/insurance`
+                  )
+                }
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+
+                <div className="flex justify-between items-center">
+
+                  <h3 className="text-xl font-bold">
+                    🛡 {t("insurance")}
+                  </h3>
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${insuranceStatus === "Verified"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                      }`}
                   >
+                    {insuranceExists
+                      ? t("added")
+                      : t("notAdded")}
+                  </span>
 
-                    <div className="flex justify-between items-center">
+                </div>
 
-                      <h3 className="text-xl font-bold">
-                        🛡 {t("insurance")}
-                      </h3>
+                <p className="text-gray-500 mt-4">
+                  {insuranceExists
+                    ? t("manageInsurance")
+                    : t("addInsurance")}
+                </p>
 
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${insuranceExists
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                          }`}
-                      >
-                        {insuranceExists
-                          ? t("added")
-                          : t("notAdded")}
-                      </span>
+                <p className="text-blue-700 mt-6 font-semibold">
+                  {t("clickToManage")}
+                </p>
 
-                    </div>
-
-                    <p className="text-gray-500 mt-4">
-                      {insuranceExists
-                        ? t("manageInsurance")
-                        : t("addInsurance")}
-                    </p>
-
-                    <p className="text-blue-700 mt-6 font-semibold">
-                      {t("clickToManage")}
-                    </p>
-
-                  </div>
+              </div>
 
 
-                  {/* ======================================
+              {/* ======================================
                   TAX
               ====================================== */}
 
-                  <div
-                    onClick={() =>
-                      navigate(
-                        `/vehicle/${vehicleId}/tax`
-                      )
-                    }
-                    className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              <div
+                onClick={() =>
+                  navigate(
+                    `/vehicle/${vehicleId}/tax`
+                  )
+                }
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+
+                <div className="flex justify-between items-center">
+
+                  <h3 className="text-xl font-bold">
+                    💰 {t("vehicleTax")}
+                  </h3>
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${taxStatus === "Verified"
+                      ? "bg-green-100 text-green-700"
+                      : taxStatus === "Rejected"
+                        ? "bg-red-100 text-red-700"
+                        : taxStatus === "Pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
                   >
+                    {taxExists
+                      ? taxStatus
+                      : "Not Added"}
+                  </span>
 
-                    <div className="flex justify-between items-center">
+                </div>
 
-                      <h3 className="text-xl font-bold">
-                        💰 {t("vehicleTax")}
-                      </h3>
+                <p className="text-gray-500 mt-4">
+                  {taxExists
+                    ? t("manageVehicleTax")
+                    : t("addVehicleTax")}
+                </p>
 
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${taxExists
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                          }`}
-                      >
-                        {taxExists
-                          ? t("active")
-                          : t("inactive")}
-                      </span>
+                <p className="text-blue-700 mt-6 font-semibold">
+                  {taxExists
+                    ? t("manage")
+                    : t("addNow")}
+                </p>
 
-                    </div>
-
-                    <p className="text-gray-500 mt-4">
-                      {taxExists
-                        ? t("manageVehicleTax")
-                        : t("addVehicleTax")}
-                    </p>
-
-                    <p className="text-blue-700 mt-6 font-semibold">
-                      {taxExists
-                        ? t("manage")
-                        : t("addNow")}
-                    </p>
-
-                  </div>
+              </div>
 
 
-                  {/* ======================================
+              {/* ======================================
                   DOCUMENTS
               ====================================== */}
 
-                  <div
-                    onClick={() =>
-                      navigate(
-                        `/vehicle/${vehicleId}/documents`
-                      )
-                    }
-                    className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              <div
+                onClick={() =>
+                  navigate(
+                    `/vehicle/${vehicleId}/documents`
+                  )
+                }
+                className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              >
+
+                <div className="flex justify-between items-center">
+
+                  <h3 className="text-xl font-bold">
+                    📄 {t("documents")}
+                  </h3>
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${documentsStatus === "Verified"
+                      ? "bg-green-100 text-green-700"
+                      : documentsStatus === "Rejected"
+                        ? "bg-red-100 text-red-700"
+                        : documentsStatus === "Pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
                   >
+                    {documentsExists
+                      ? documentsStatus
+                      : "Not Added"}
+                  </span>
 
-                    <div className="flex justify-between items-center">
+                </div>
 
-                      <h3 className="text-xl font-bold">
-                        📄 {t("documents")}
-                      </h3>
+                <p className="text-gray-500 mt-4">
+                  {documentsExists
+                    ? t("manageVehicleDocuments")
+                    : t("uploadVehicleDocuments")}
+                </p>
 
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${documentsExists
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                          }`}
-                      >
-                        {documentsExists
-                          ? t("added")
-                          : t("notAdded")}
-                      </span>
+                <p className="text-blue-700 mt-6 font-semibold">
+                  {documentsExists
+                    ? t("manage")
+                    : t("addNow")}
+                </p>
 
-                    </div>
+              </div>
 
-                    <p className="text-gray-500 mt-4">
-                      {documentsExists
-                        ? t("manageVehicleDocuments")
-                        : t("uploadVehicleDocuments")}
+            </div>
+
+
+            {/* ==========================================
+                VEHICLE REPORT
+              ========================================== */}
+
+            <div className="mt-8">
+
+              {!showReportForm ? (
+
+                <div className="flex flex-col md:flex-row gap-4">
+
+                  {/* REPORT VEHICLE */}
+
+                  <button
+                    onClick={() => setShowReportForm(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold"
+                  >
+                    🚨 Report Vehicle
+                  </button>
+
+
+                  {/* REMOVE VEHICLE */}
+
+                  <button
+                    onClick={handleRemoveVehicle}
+                    className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl"
+                  >
+                    🗑 {t("removeFromDashboard")}
+                  </button>
+
+                </div>
+
+              ) : (
+
+                /* ======================================
+                   REPORT FORM
+                ====================================== */
+
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+
+                  <h3 className="text-2xl font-bold text-red-700">
+                    🚨 Report Vehicle
+                  </h3>
+
+                  <p className="text-gray-600 mt-2">
+                    Please select the reason for your report
+                    and provide accurate information.
+                  </p>
+
+
+                  {/* VEHICLE */}
+
+                  <div className="mt-5 bg-white rounded-xl p-4 border">
+
+                    <p className="text-sm text-gray-500">
+                      Vehicle
                     </p>
 
-                    <p className="text-blue-700 mt-6 font-semibold">
-                      {documentsExists
-                        ? t("manage")
-                        : t("addNow")}
+                    <p className="font-bold text-lg">
+                      {vehicle.vehicleNumber}
                     </p>
+
+                    <p className="text-gray-600">
+                      {vehicle.brand} {vehicle.model}
+                    </p>
+
+                  </div>
+
+
+                  {/* REPORT TYPE */}
+
+                  <div className="mt-5">
+
+                    <label className="block font-semibold mb-2">
+                      Reason for Report
+                    </label>
+
+                    <select
+                      value={reportType}
+                      onChange={(e) =>
+                        setReportType(e.target.value)
+                      }
+                      className="w-full bg-white border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+
+                      <option value="">
+                        Select a reason
+                      </option>
+
+                      <option value="Vehicle Stolen">
+                        🚨 Vehicle Stolen
+                      </option>
+
+                      <option value="Vehicle Recovered">
+                        🟢 Vehicle Recovered
+                      </option>
+
+                      <option value="Accident / Damage">
+                        💥 Accident / Damage
+                      </option>
+
+                      <option value="Incorrect Vehicle Information">
+                        ⚠️ Incorrect Vehicle Information
+                      </option>
+
+                      <option value="Suspicious Activity">
+                        🔎 Suspicious Activity
+                      </option>
+
+                      <option value="Other">
+                        📝 Other
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  {/* DETAILS */}
+
+                  <div className="mt-5">
+
+                    <label className="block font-semibold mb-2">
+                      Additional Details
+                    </label>
+
+                    <textarea
+                      value={reportDescription}
+                      onChange={(e) =>
+                        setReportDescription(e.target.value)
+                      }
+                      placeholder="Please explain the reason for your report..."
+                      rows="5"
+                      className="w-full bg-white border rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+
+                  </div>
+
+
+                  {/* BUTTONS */}
+
+                  <div className="mt-6 flex flex-col md:flex-row gap-3">
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowReportForm(false);
+                        setReportType("");
+                        setReportDescription("");
+                      }}
+                      disabled={reportSubmitting}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl font-semibold"
+                    >
+                      Cancel
+                    </button>
+
+
+                    <button
+                      type="button"
+                      onClick={handleSubmitReport}
+                      disabled={reportSubmitting}
+                      className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-semibold"
+                    >
+                      {reportSubmitting
+                        ? "Submitting..."
+                        : "Submit Report"}
+                    </button>
 
                   </div>
 
                 </div>
 
-
-                {/* ==========================================
-                VEHICLE REPORT
-              ========================================== */}
-
-                <div className="mt-8">
-
-                  {!showReportForm ? (
-
-                    <div className="flex flex-col md:flex-row gap-4">
-
-                      {/* REPORT VEHICLE */}
-
-                      <button
-                        onClick={() => setShowReportForm(true)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold"
-                      >
-                        🚨 Report Vehicle
-                      </button>
-
-
-                      {/* REMOVE VEHICLE */}
-
-                      <button
-                        onClick={handleRemoveVehicle}
-                        className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl"
-                      >
-                        🗑 {t("removeFromDashboard")}
-                      </button>
-
-                    </div>
-
-                  ) : (
-
-                    /* ======================================
-                       REPORT FORM
-                    ====================================== */
-
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-
-                      <h3 className="text-2xl font-bold text-red-700">
-                        🚨 Report Vehicle
-                      </h3>
-
-                      <p className="text-gray-600 mt-2">
-                        Please select the reason for your report
-                        and provide accurate information.
-                      </p>
-
-
-                      {/* VEHICLE */}
-
-                      <div className="mt-5 bg-white rounded-xl p-4 border">
-
-                        <p className="text-sm text-gray-500">
-                          Vehicle
-                        </p>
-
-                        <p className="font-bold text-lg">
-                          {vehicle.vehicleNumber}
-                        </p>
-
-                        <p className="text-gray-600">
-                          {vehicle.brand} {vehicle.model}
-                        </p>
-
-                      </div>
-
-
-                      {/* REPORT TYPE */}
-
-                      <div className="mt-5">
-
-                        <label className="block font-semibold mb-2">
-                          Reason for Report
-                        </label>
-
-                        <select
-                          value={reportType}
-                          onChange={(e) =>
-                            setReportType(e.target.value)
-                          }
-                          className="w-full bg-white border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-
-                          <option value="">
-                            Select a reason
-                          </option>
-
-                          <option value="Vehicle Stolen">
-                            🚨 Vehicle Stolen
-                          </option>
-
-                          <option value="Vehicle Recovered">
-                            🟢 Vehicle Recovered
-                          </option>
-
-                          <option value="Accident / Damage">
-                            💥 Accident / Damage
-                          </option>
-
-                          <option value="Incorrect Vehicle Information">
-                            ⚠️ Incorrect Vehicle Information
-                          </option>
-
-                          <option value="Suspicious Activity">
-                            🔎 Suspicious Activity
-                          </option>
-
-                          <option value="Other">
-                            📝 Other
-                          </option>
-
-                        </select>
-
-                      </div>
-
-
-                      {/* DETAILS */}
-
-                      <div className="mt-5">
-
-                        <label className="block font-semibold mb-2">
-                          Additional Details
-                        </label>
-
-                        <textarea
-                          value={reportDescription}
-                          onChange={(e) =>
-                            setReportDescription(e.target.value)
-                          }
-                          placeholder="Please explain the reason for your report..."
-                          rows="5"
-                          className="w-full bg-white border rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
-                        />
-
-                      </div>
-
-
-                      {/* BUTTONS */}
-
-                      <div className="mt-6 flex flex-col md:flex-row gap-3">
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowReportForm(false);
-                            setReportType("");
-                            setReportDescription("");
-                          }}
-                          disabled={reportSubmitting}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl font-semibold"
-                        >
-                          Cancel
-                        </button>
-
-
-                        <button
-                          type="button"
-                          onClick={handleSubmitReport}
-                          disabled={reportSubmitting}
-                          className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-semibold"
-                        >
-                          {reportSubmitting
-                            ? "Submitting..."
-                            : "Submit Report"}
-                        </button>
-
-                      </div>
-
-                    </div>
-
-                  )}
-
-                </div>
-
-              </div>
+              )}
 
             </div>
 
@@ -781,8 +832,12 @@ function VehicleDetails() {
 
         </div>
 
-      );
-    }
-  
+      </div>
+
+    </div>
+
+  );
+}
+
 
 export default VehicleDetails;

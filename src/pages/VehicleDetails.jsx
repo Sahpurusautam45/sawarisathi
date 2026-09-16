@@ -1,3 +1,6 @@
+import {
+  createAdminNotification,
+} from "../services/adminNotificationService";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -254,17 +257,56 @@ function VehicleDetails() {
       // CREATE NEW REPORT
       // ==========================================
 
-      await addDoc(collection(db, "vehicleReports"), {
-        vehicleId: vehicleId,
-        vehicleNumber: vehicle?.vehicleNumber || "",
-        userId: user.uid,
-        reportType: reportType,
-        description: reportDescription.trim(),
-        status: "Pending",
-        createdAt: serverTimestamp(),
-        reviewedAt: null,
-        reviewedBy: null,
-        rejectionReason: null,
+      const reportRef = await addDoc(
+        collection(db, "vehicleReports"),
+        {
+          vehicleId: vehicleId,
+          vehicleNumber: vehicle?.vehicleNumber || "",
+          userId: user.uid,
+          reportType: reportType,
+          description: reportDescription.trim(),
+          status: "Pending",
+          createdAt: serverTimestamp(),
+          reviewedAt: null,
+          reviewedBy: null,
+          rejectionReason: null,
+        });
+
+      // ==========================================
+      // 🔔 ADMIN NOTIFICATION — NEW REPORT
+      // ==========================================
+
+      await createAdminNotification({
+
+        vehicleId,
+
+        reportId:
+          reportRef.id,
+
+        vehicleNumber:
+          vehicle?.vehicleNumber || "",
+
+        ownerId:
+          vehicle?.ownerId || user.uid,
+
+        ownerName:
+          vehicle?.ownerName || "",
+
+        documentType:
+          "Report",
+
+        type:
+          "report_submission",
+
+        category:
+          "complaints",
+
+        title:
+          "New Vehicle Report",
+
+        message:
+          `A new ${reportType} report has been submitted for ${vehicle?.vehicleNumber || "vehicle"}.`,
+
       });
 
       setShowReportForm(false);

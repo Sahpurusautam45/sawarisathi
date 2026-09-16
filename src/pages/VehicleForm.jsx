@@ -438,31 +438,17 @@ function ManualVehicleForm() {
 
 
         // ========================================
-        // CLEAR FORM
+        // SUCCESS → GO TO DASHBOARD
         // ========================================
 
-        setVehicleNumber("");
+        navigate("/dashboard");
 
-        setVehicleType("");
-
-        setSelectedBrand("");
-
-        setModel("");
-
-        setColor("");
-
-        setEngineCapacity("");
-
-        setCylinders("");
-
-        setSeatingCapacity("");
-
-        setFuelType("");
+        return;
 
       } catch (error) {
 
         console.error(
-          "Vehicle Save Error:",
+          "Save vehicle error:",
           error
         );
 
@@ -472,7 +458,7 @@ function ManualVehicleForm() {
         // ========================================
 
         if (
-          error.message ===
+          error?.message ===
           "VEHICLE_ALREADY_REGISTERED"
         ) {
 
@@ -689,7 +675,7 @@ function ManualVehicleForm() {
 
             {(
               vehicleBrands[
-                vehicleType
+              vehicleType
               ] || []
             ).map(
               (brand) => (

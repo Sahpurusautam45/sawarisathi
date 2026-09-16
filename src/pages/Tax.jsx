@@ -337,6 +337,40 @@ function Tax() {
         status: "Active",
       });
 
+      // ==================================
+      // 🔔 NEW TAX NOTIFICATION
+      // ==================================
+
+      await createAdminNotification({
+
+        vehicleId,
+
+        vehicleNumber:
+          vehicle?.vehicleNumber || "",
+
+        ownerId:
+          vehicle?.ownerId || "",
+
+        ownerName:
+          vehicle?.ownerName || "",
+
+        documentType:
+          "Tax",
+
+        type:
+          "document_submission",
+
+        category:
+          "documents",
+
+        title:
+          "New Tax Submitted",
+
+        message:
+          `Tax for ${vehicle?.vehicleNumber || "vehicle"} has been submitted for verification.`,
+
+      });
+
       alert(
         "Vehicle tax submitted successfully!"
       );
@@ -541,8 +575,8 @@ function Tax() {
 
                 <span
                   className={`ml-2 px-3 py-1 rounded-full ${taxStatus === "Active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
                     }`}
                 >
                   {taxStatus === "Active"
@@ -591,8 +625,8 @@ function Tax() {
 
                 <span
                   className={`ml-2 px-3 py-1 rounded-full ${taxStatus === "Active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
                     }`}
                 >
                   {taxStatus === "Active"

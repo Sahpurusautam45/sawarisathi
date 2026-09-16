@@ -1,4 +1,8 @@
-import { Routes, Route } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 // Language
 import { LanguageProvider } from "./context/LanguageContext";
@@ -15,6 +19,7 @@ import Services from "./pages/Services";
 import Auth from "./pages/Auth";
 import VehicleLookup from "./pages/VehicleLookup";
 import PublicSearch from "./pages/PublicSearch";
+import EmergencySOS from "./pages/EmergencySOS";
 import NotFound from "./pages/NotFound";
 
 // User Pages
@@ -40,12 +45,27 @@ import AdminAuditHistory from "./admin/AdminAuditHistory";
 function App() {
   return (
     <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}
+
+
+function AppContent() {
+
+  const location = useLocation();
+
+  const isAdminRoute =
+    location.pathname.startsWith("/admin");
+
+  return (
+    <>
 
       {/* ==============================
-          NAVBAR
+          NORMAL USER NAVBAR
       ============================== */}
 
-      <Navbar />
+      {!isAdminRoute && <Navbar />}
 
 
       {/* ==============================
@@ -88,6 +108,10 @@ function App() {
           element={<PublicSearch />}
         />
 
+        <Route
+          path="/emergency-sos"
+          element={<EmergencySOS />}
+        />
 
         {/* ==========================================
             USER PROTECTED ROUTES
@@ -263,8 +287,9 @@ function App() {
 
       </Routes>
 
-    </LanguageProvider>
+    </>
   );
 }
+
 
 export default App;

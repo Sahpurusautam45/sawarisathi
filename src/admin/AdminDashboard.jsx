@@ -52,19 +52,48 @@ function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6 mt-8">
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers}
-          icon={<Users size={28} />}
-          color="bg-blue-600"
-        />
 
-        <StatCard
-          title="Vehicles"
-          value={stats.totalVehicles}
-          icon={<Car size={28} />}
-          color="bg-green-600"
-        />
+        {/* ==========================================
+      TOTAL USERS
+  ========================================== */}
+
+        <div
+          onClick={() =>
+            navigate("/admin/users")
+          }
+          className="cursor-pointer"
+        >
+          <StatCard
+            title="Total Users"
+            value={stats.totalUsers}
+            icon={<Users size={28} />}
+            color="bg-blue-600"
+          />
+        </div>
+
+
+        {/* ==========================================
+      TOTAL VEHICLES
+  ========================================== */}
+
+        <div
+          onClick={() =>
+            navigate("/admin/vehicle-verification")
+          }
+          className="cursor-pointer"
+        >
+          <StatCard
+            title="Vehicles"
+            value={stats.totalVehicles}
+            icon={<Car size={28} />}
+            color="bg-green-600"
+          />
+        </div>
+
+
+        {/* ==========================================
+      PENDING VEHICLES
+  ========================================== */}
 
         <div
           onClick={() =>
@@ -80,19 +109,48 @@ function AdminDashboard() {
           />
         </div>
 
-        <StatCard
-          title="Verified"
-          value={stats.verifiedVehicles}
-          icon={<BadgeCheck size={28} />}
-          color="bg-purple-600"
-        />
 
-        <StatCard
-          title="Total Reports"
-          value={stats.totalReports}
-          icon={<FileText size={28} />}
-          color="bg-red-600"
-        />
+        {/* ==========================================
+      VERIFIED VEHICLES
+  ========================================== */}
+
+        <div
+          onClick={() =>
+            navigate("/admin/vehicle-verification")
+          }
+          className="cursor-pointer"
+        >
+          <StatCard
+            title="Verified"
+            value={stats.verifiedVehicles}
+            icon={<BadgeCheck size={28} />}
+            color="bg-purple-600"
+          />
+        </div>
+
+
+        {/* ==========================================
+      TOTAL REPORTS
+  ========================================== */}
+
+        <div
+          onClick={() =>
+            navigate("/admin/vehicle-reports")
+          }
+          className="cursor-pointer"
+        >
+          <StatCard
+            title="Total Reports"
+            value={stats.totalReports}
+            icon={<FileText size={28} />}
+            color="bg-red-600"
+          />
+        </div>
+
+
+        {/* ==========================================
+      PENDING REPORTS
+  ========================================== */}
 
         <div
           onClick={() =>
@@ -107,6 +165,7 @@ function AdminDashboard() {
             color="bg-orange-500"
           />
         </div>
+
       </div>
 
       <RecentActivity />

@@ -15,6 +15,7 @@ import {
   orderBy,
   doc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 
 import { db } from "../../firebase/firebase";
@@ -36,6 +37,13 @@ function AdminTopbar() {
 
   const [showNotifications, setShowNotifications] =
     useState(false);
+
+  // ==========================================
+  // NOTIFICATION CATEGORY FILTER
+  // ==========================================
+
+  const [notificationCategory, setNotificationCategory] =
+    useState("all");
 
 
   // ==========================================
@@ -102,16 +110,129 @@ function AdminTopbar() {
 
   }, []);
 
+  // ==========================================
+  // NOTIFICATION CATEGORY
+  // ==========================================
+
+  const getNotificationCategory = (
+    notification
+  ) => {
+
+    // New notifications already have category
+    if (notification.category) {
+      return notification.category;
+    }
+
+
+    // Backward compatibility for older
+    // notifications without category
+
+    const documentType =
+      (
+        notification.documentType || ""
+      ).toLowerCase();
+
+
+    if (
+      documentType === "bluebook" ||
+      documentType === "insurance" ||
+      documentType === "tax"
+    ) {
+      return "documents";
+    }
+
+
+    if (
+      notification.type ===
+      "vehicle_submission" ||
+      notification.type ===
+      "vehicle_update"
+    ) {
+      return "vehicles";
+    }
+
+
+    return "system";
+  };
+
 
   // ==========================================
   // UNREAD COUNT
   // ==========================================
+
+  // ==========================================
+  // FILTERED NOTIFICATIONS
+  // ==========================================
+
+  const filteredNotifications =
+    notificationCategory === "all"
+      ? notifications
+      : notifications.filter(
+        (notification) =>
+          getNotificationCategory(
+            notification
+          ) === notificationCategory
+      );
 
   const unreadCount =
     notifications.filter(
       (notification) =>
         notification.read === false
     ).length;
+
+  // ==========================================
+  // UNREAD COUNT BY CATEGORY
+  // ==========================================
+
+  const getUnreadCountByCategory = (
+    category
+  ) => {
+
+    return notifications.filter(
+      (notification) =>
+        notification.read === false &&
+        getNotificationCategory(
+          notification
+        ) === category
+    ).length;
+
+  };
+
+
+  const vehicleUnreadCount =
+    getUnreadCountByCategory(
+      "vehicles"
+    );
+
+
+  const documentUnreadCount =
+    getUnreadCountByCategory(
+      "documents"
+    );
+
+
+  const complaintUnreadCount =
+    getUnreadCountByCategory(
+      "complaints"
+    );
+
+
+  const userUnreadCount =
+    getUnreadCountByCategory(
+      "users"
+    );
+
+
+  const serviceUnreadCount =
+    getUnreadCountByCategory(
+      "services"
+    );
+
+
+  const systemUnreadCount =
+    getUnreadCountByCategory(
+      "system"
+    );
 
 
   // ==========================================
@@ -146,30 +267,128 @@ function AdminTopbar() {
 
     };
 
+  // ==========================================
+  // MARK ALL NOTIFICATIONS AS READ
+  // ==========================================
+
+  const markAllAsRead = async () => {
+
+    const unreadNotifications =
+      notifications.filter(
+        (notification) =>
+          notification.read === false
+      );
+
+    if (
+      unreadNotifications.length === 0
+    ) {
+      return;
+    }
+
+    try {
+
+      const batch = writeBatch(db);
+
+      unreadNotifications.forEach(
+        (notification) => {
+
+          const notificationRef =
+            doc(
+              db,
+              "adminNotifications",
+              notification.id
+            );
+
+          batch.update(
+            notificationRef,
+            {
+              read: true,
+            }
+          );
+
+        }
+      );
+
+      await batch.commit();
+
+    } catch (error) {
+
+      console.error(
+        "Failed to mark all notifications as read:",
+        error
+      );
+
+    }
+  };
+
 
   // ==========================================
   // REVIEW VEHICLE
   // ==========================================
 
+  // ==========================================
+  // REVIEW NOTIFICATION
+  // ==========================================
+
   const handleReview = async (notification) => {
     try {
 
-      // Mark notification as read
+      // ========================================
+      // MARK NOTIFICATION AS READ
+      // ========================================
+
       await markAsRead(notification.id);
 
-      // Close notification dropdown
+
+      // ========================================
+      // CLOSE NOTIFICATION DROPDOWN
+      // ========================================
+
       setShowNotifications(false);
 
-      // ==========================================
-      // DOCUMENT TYPE
-      // ==========================================
+
+      // ========================================
+      // REPORT NOTIFICATION
+      // ========================================
+
+      if (
+        notification.type ===
+        "report_submission"
+      ) {
+
+        if (!notification.reportId) {
+
+          console.error(
+            "Report notification has no reportId:",
+            notification
+          );
+
+          alert(
+            "Report ID is missing."
+          );
+
+          return;
+        }
+
+
+        navigate(
+          `/admin/vehicle-reports/${notification.reportId}`
+        );
+
+        return;
+      }
+
+
+      // ========================================
+      // DOCUMENT NOTIFICATION
+      // ========================================
 
       const documentType =
-        (notification.documentType || "").toLowerCase();
+        (
+          notification.documentType ||
+          ""
+        ).toLowerCase();
 
-      // ==========================================
-      // GO DIRECTLY TO THIS VEHICLE + DOCUMENT
-      // ==========================================
 
       navigate(
         `/admin/vehicle-review/${notification.vehicleId}?document=${documentType}`
@@ -185,13 +404,22 @@ function AdminTopbar() {
     }
   };
 
-
   // ==========================================
   // NOTIFICATION ICON
   // ==========================================
 
   const getNotificationIcon =
     (documentType) => {
+
+      if (
+        documentType ===
+        "Vehicle"
+      ) {
+
+        return "🚗";
+
+      }
+
 
       if (
         documentType ===
@@ -202,6 +430,7 @@ function AdminTopbar() {
 
       }
 
+
       if (
         documentType ===
         "Insurance"
@@ -211,6 +440,7 @@ function AdminTopbar() {
 
       }
 
+
       if (
         documentType ===
         "Tax"
@@ -219,6 +449,7 @@ function AdminTopbar() {
         return "💰";
 
       }
+
 
       return "📄";
 
@@ -413,6 +644,18 @@ function AdminTopbar() {
 
               </p>
 
+              {unreadCount > 0 && (
+
+                <button
+                  type="button"
+                  onClick={markAllAsRead}
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                >
+                  ✓ Mark all as read
+                </button>
+
+              )}
+
             </div>
 
 
@@ -439,10 +682,94 @@ function AdminTopbar() {
               NOTIFICATION LIST
           ================================== */}
 
+          {/* =================================
+    NOTIFICATION CATEGORIES
+================================== */}
+
+          <div className="px-3 py-3 border-b bg-gray-50">
+
+            <div className="flex gap-2 overflow-x-auto">
+
+              {[
+                {
+                  id: "all",
+                  label: "All",
+                  count: unreadCount,
+                },
+                {
+                  id: "vehicles",
+                  label: "🚗 Vehicles",
+                  count: vehicleUnreadCount,
+                },
+                {
+                  id: "documents",
+                  label: "📄 Documents",
+                  count: documentUnreadCount,
+                },
+                {
+                  id: "complaints",
+                  label: "⚠️ Complaints",
+                  count: complaintUnreadCount,
+                },
+                {
+                  id: "users",
+                  label: "👤 Users",
+                  count: userUnreadCount,
+                },
+                {
+                  id: "services",
+                  label: "🔧 Services",
+                  count: serviceUnreadCount,
+                },
+                {
+                  id: "system",
+                  label: "⚙️ System",
+                  count: systemUnreadCount,
+                },
+              ].map((category) => (
+
+                <button
+
+                  key={category.id}
+
+                  type="button"
+
+                  onClick={() =>
+                    setNotificationCategory(
+                      category.id
+                    )
+                  }
+
+                  className={`whitespace-nowrap px-3 py-2 rounded-lg text-xs font-semibold transition ${notificationCategory ===
+                    category.id
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-gray-600 border hover:bg-gray-100"
+                    }`}
+
+                >
+
+                  <span>
+                    {category.label}
+                  </span>
+
+                  {category.count > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                      {category.count}
+                    </span>
+                  )}
+
+                </button>
+
+              ))}
+
+            </div>
+
+          </div>
+
           <div className="max-h-[500px] overflow-y-auto">
 
 
-            {notifications.length === 0 ? (
+            {filteredNotifications.length === 0 ? (
 
               <div className="p-8 text-center">
 
@@ -455,14 +782,16 @@ function AdminTopbar() {
                 </p>
 
                 <p className="text-sm text-gray-500 mt-1">
-                  New document resubmissions will appear here.
+                  {notificationCategory === "all"
+                    ? "New admin notifications will appear here."
+                    : "No notifications in this category."}
                 </p>
 
               </div>
 
             ) : (
 
-              notifications.map(
+              filteredNotifications.map(
                 (notification) => (
 
                   <div
@@ -472,8 +801,8 @@ function AdminTopbar() {
                     }
 
                     className={`p-4 border-b hover:bg-slate-50 transition ${notification.read
-                        ? "bg-white"
-                        : "bg-blue-50"
+                      ? "bg-white"
+                      : "bg-blue-50"
                       }`}
 
                   >

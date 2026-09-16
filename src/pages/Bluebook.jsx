@@ -332,19 +332,13 @@ function Bluebook() {
       !registrationDate ||
       !expiryDate
     ) {
-
-      alert(
-        "Please fill all fields."
-      );
-
+      alert("Please fill all fields.");
       return;
     }
-
 
     try {
 
       setSaving(true);
-
 
       // ======================================
       // SAVE BLUEBOOK DATA
@@ -355,8 +349,7 @@ function Bluebook() {
         {
           provinceId: province,
           officeId: office,
-          bluebookNumber:
-            bluebookNumber.trim(),
+          bluebookNumber: bluebookNumber.trim(),
           registrationDate,
           expiryDate,
         }
@@ -369,71 +362,54 @@ function Bluebook() {
 
       if (isCorrecting) {
 
-        const vehicleRef =
-          doc(
-            db,
-            "vehicles",
-            vehicleId
-          );
+        const vehicleRef = doc(
+          db,
+          "vehicles",
+          vehicleId
+        );
 
 
         await updateDoc(
           vehicleRef,
-
           {
+            bluebookStatus: "Pending",
 
-            // ------------------------------
-            // RESET BLUEBOOK STATUS
-            // ------------------------------
+            bluebookRejectionReason: "",
 
-            bluebookStatus:
-              "Pending",
-
-            // ------------------------------
-            // CLEAR CURRENT REJECTION
-            // ------------------------------
-
-            bluebookRejectionReason:
-              "",
-
-            // ------------------------------
-            // RESUBMISSION INFORMATION
-            // ------------------------------
-
-            bluebookResubmitted:
-              true,
+            bluebookResubmitted: true,
 
             bluebookResubmittedAt:
               serverTimestamp(),
-
-            // ------------------------------
-            // ADMIN NOTE
-            // ------------------------------
 
             remarks:
               "Bluebook resubmitted for Admin re-verification.",
 
             updatedAt:
               serverTimestamp(),
-
           }
         );
 
 
         // ==================================
-        // NOTIFY ADMIN
+        // RESUBMISSION NOTIFICATION
         // ==================================
 
         await createAdminNotification({
+
           vehicleId,
+
           vehicleNumber:
             vehicle?.vehicleNumber || "",
+
           ownerId:
             vehicle?.ownerId || "",
+
           ownerName:
             vehicle?.ownerName || "",
+
           documentType:
             "Bluebook",
+
         });
 
 
@@ -444,58 +420,133 @@ function Bluebook() {
         setBluebook({
 
           provinceId: province,
+
           officeId: office,
+
           bluebookNumber:
             bluebookNumber.trim(),
+
           registrationDate,
+
           expiryDate,
 
         });
 
 
-        setBluebookStatus(
-          "Pending"
-        );
+        setBluebookStatus("Pending");
 
+        setBluebookRejectionReason("");
 
-        setBluebookRejectionReason(
-          ""
-        );
-
-
-        setIsCorrecting(
-          false
-        );
+        setIsCorrecting(false);
 
 
         alert(
           "🔄 Bluebook resubmitted successfully. It is now pending Admin verification."
         );
 
-
         return;
       }
 
 
       // ======================================
-      // NORMAL SUBMISSION
+      // NEW / FIRST-TIME SUBMISSION
+      // ======================================
+
+      const vehicleRef = doc(
+        db,
+        "vehicles",
+        vehicleId
+      );
+
+
+      // ======================================
+      // SET VEHICLE STATUS TO PENDING
+      // ======================================
+
+      await updateDoc(
+        vehicleRef,
+        {
+          bluebookStatus: "Pending",
+
+          bluebookResubmitted: false,
+
+          bluebookRejectionReason: "",
+
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+
+      // ======================================
+      // 🔔 NEW BLUEBOOK ADMIN NOTIFICATION
+      // ======================================
+
+      await createAdminNotification({
+
+        vehicleId,
+
+        vehicleNumber:
+          vehicle?.vehicleNumber || "",
+
+        ownerId:
+          vehicle?.ownerId || "",
+
+        ownerName:
+          vehicle?.ownerName || "",
+
+        documentType:
+          "Bluebook",
+
+        type:
+          "document_submission",
+
+        category:
+          "documents",
+
+        title:
+          "New Bluebook Submitted",
+
+        message:
+          `Bluebook for ${vehicle?.vehicleNumber || "vehicle"} has been submitted for verification.`,
+
+      });
+
+
+      // ======================================
+      // UPDATE LOCAL STATE
       // ======================================
 
       setBluebook({
 
         provinceId: province,
+
         officeId: office,
+
         bluebookNumber:
           bluebookNumber.trim(),
+
         registrationDate,
+
         expiryDate,
 
       });
 
 
-      alert(
-        "Bluebook submitted successfully!"
+      setBluebookStatus(
+        "Pending"
       );
+
+
+      setBluebookRejectionReason(
+        ""
+      );
+
+
+      alert(
+        "📘 Bluebook submitted successfully! It is now pending Admin verification."
+      );
+
 
     } catch (error) {
 
@@ -507,7 +558,7 @@ function Bluebook() {
       alert(
         isCorrecting
           ? "Failed to resubmit Bluebook. Please try again."
-          : "Failed to save Bluebook."
+          : "Failed to save Bluebook. Please try again."
       );
 
     } finally {
@@ -515,7 +566,6 @@ function Bluebook() {
       setSaving(false);
 
     }
-
   };
 
 

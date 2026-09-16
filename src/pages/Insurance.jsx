@@ -198,8 +198,8 @@ function Insurance() {
             data.category === "general"
               ? insuranceCompanies.general
               : data.category === "micro"
-              ? insuranceCompanies.micro
-              : [];
+                ? insuranceCompanies.micro
+                : [];
 
 
           if (
@@ -259,8 +259,8 @@ function Insurance() {
     category === "general"
       ? insuranceCompanies.general
       : category === "micro"
-      ? insuranceCompanies.micro
-      : [];
+        ? insuranceCompanies.micro
+        : [];
 
 
   // ==========================================
@@ -291,8 +291,8 @@ function Insurance() {
       insurance.category === "general"
         ? insuranceCompanies.general
         : insurance.category === "micro"
-        ? insuranceCompanies.micro
-        : [];
+          ? insuranceCompanies.micro
+          : [];
 
 
     if (
@@ -349,8 +349,8 @@ function Insurance() {
         insurance.category === "general"
           ? insuranceCompanies.general
           : insurance.category === "micro"
-          ? insuranceCompanies.micro
-          : [];
+            ? insuranceCompanies.micro
+            : [];
 
 
       if (
@@ -503,23 +503,6 @@ function Insurance() {
 
 
         // ==================================
-        // NOTIFY ADMIN
-        // ==================================
-
-        await createAdminNotification({
-          vehicleId,
-          vehicleNumber:
-            vehicle.vehicleNumber || "",
-          ownerId:
-            vehicle.ownerId || "",
-          ownerName:
-            vehicle.ownerName || "",
-          documentType:
-            "Insurance",
-        });
-
-
-        // ==================================
         // UPDATE LOCAL STATE
         // ==================================
 
@@ -551,6 +534,29 @@ function Insurance() {
         );
 
 
+        // ==================================
+        // 🔔 RESUBMISSION NOTIFICATION
+        // ==================================
+
+        await createAdminNotification({
+
+          vehicleId,
+
+          vehicleNumber:
+            vehicle?.vehicleNumber || "",
+
+          ownerId:
+            vehicle?.ownerId || "",
+
+          ownerName:
+            vehicle?.ownerName || "",
+
+          documentType:
+            "Insurance",
+
+        });
+
+
         setIsCorrecting(
           false
         );
@@ -566,7 +572,7 @@ function Insurance() {
 
 
       // ======================================
-      // NORMAL SUBMISSION
+      // NORMAL / NEW SUBMISSION
       // ======================================
 
       setInsurance({
@@ -587,9 +593,45 @@ function Insurance() {
       });
 
 
+      // ==================================
+      // 🔔 NEW INSURANCE NOTIFICATION
+      // ==================================
+
+      await createAdminNotification({
+
+        vehicleId,
+
+        vehicleNumber:
+          vehicle?.vehicleNumber || "",
+
+        ownerId:
+          vehicle?.ownerId || "",
+
+        ownerName:
+          vehicle?.ownerName || "",
+
+        documentType:
+          "Insurance",
+
+        type:
+          "document_submission",
+
+        category:
+          "documents",
+
+        title:
+          "New Insurance Submitted",
+
+        message:
+          `Insurance for ${vehicle?.vehicleNumber || "vehicle"} has been submitted for verification.`,
+
+      });
+
+
       alert(
         "Insurance submitted successfully!"
       );
+
 
     } catch (error) {
 
@@ -604,6 +646,7 @@ function Insurance() {
           ? "Failed to resubmit insurance. Please try again."
           : "Failed to save insurance."
       );
+
 
     } finally {
 
@@ -1191,8 +1234,8 @@ function Insurance() {
               {saving
                 ? "Saving..."
                 : isCorrecting
-                ? "🔄 Submit for Re-verification"
-                : "Submit Insurance"}
+                  ? "🔄 Submit for Re-verification"
+                  : "Submit Insurance"}
 
             </button>
 

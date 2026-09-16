@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
+
 function Features() {
+  const navigate = useNavigate();
   const services = [
     {
       icon: "🚗",
@@ -32,7 +35,12 @@ function Features() {
         {services.map((service, index) => (
           <div
             key={index}
-          className="bg-white rounded-2xl shadow-lg p-6 text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+            onClick={() => {
+              if (service.title === "Emergency SOS") {
+                navigate("/emergency-sos");
+              }
+            }}
+            className="bg-white rounded-2xl shadow-lg p-6 text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer"
           >
             <div className="text-5xl mb-4">{service.icon}</div>
 

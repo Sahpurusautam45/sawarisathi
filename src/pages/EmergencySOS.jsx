@@ -25,6 +25,19 @@ function EmergencySOS() {
         React.useState("");
 
 
+
+    const [garages, setGarages] =
+        React.useState([]);
+
+    const [garageLoading, setGarageLoading] =
+        React.useState(false);
+
+    const [garageError, setGarageError] =
+        React.useState("");
+
+
+
+
     // ==========================================
     // CALL EMERGENCY SERVICE
     // ==========================================
@@ -132,6 +145,10 @@ function EmergencySOS() {
     // FIND NEARBY HOSPITALS
     // ==========================================
 
+    // ==========================================
+    // FIND NEARBY HOSPITALS - GOOGLE PLACES
+    // ==========================================
+
     const findNearbyHospitals = async () => {
         if (!location) {
             setHospitalError("Please detect your location first.");
@@ -143,72 +160,228 @@ function EmergencySOS() {
         setHospitals([]);
 
         try {
-            const { latitude, longitude } = location;
-
-            const query = `
-    [out:json][timeout:25];
-    (
-      nwr["amenity"="hospital"](around:20000,${latitude},${longitude});
-      nwr["healthcare"="hospital"](around:20000,${latitude},${longitude});
-    );
-    out center tags;
-`;
+            const apiKey =
+                import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
             const response = await fetch(
-                "https://overpass-api.de/api/interpreter",
+                "https://places.googleapis.com/v1/places:searchNearby",
                 {
                     method: "POST",
+
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded"
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": apiKey,
+                        "X-Goog-FieldMask":
+                            "places.id,places.displayName,places.location,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber"
                     },
-                    body: new URLSearchParams({
-                        data: query
+
+                    body: JSON.stringify({
+                        includedTypes: ["hospital"],
+
+                        maxResultCount: 10,
+
+                        locationRestriction: {
+                            circle: {
+                                center: {
+                                    latitude: location.latitude,
+                                    longitude: location.longitude
+                                },
+                                radius: 20000
+                            }
+                        }
                     })
                 }
             );
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error("Overpass error:", errorText);
-                throw new Error("Hospital API request failed");
+
+                console.error(
+                    "Google Places error:",
+                    errorText
+                );
+
+                throw new Error(
+                    "Google Places request failed"
+                );
             }
 
             const data = await response.json();
 
-            const results = data.elements
-                .map((place) => {
-                    const lat = place.lat ?? place.center?.lat;
-                    const lon = place.lon ?? place.center?.lon;
+            console.log(
+                "Google Hospitals:",
+                data
+            );
 
-                    if (lat === undefined || lon === undefined) {
-                        return null;
-                    }
+            const results =
+                (data.places || []).map((place) => ({
+                    id: place.id,
 
-                    return {
-                        id: `${place.type}-${place.id}`,
-                        name: place.tags?.name || "Unnamed Hospital",
-                        latitude: lat,
-                        longitude: lon
-                    };
-                })
-                .filter(Boolean);
+                    name:
+                        place.displayName?.text ||
+                        "Unnamed Hospital",
+
+                    phone:
+                        place.internationalPhoneNumber ||
+                        place.nationalPhoneNumber ||
+                        "",
+
+                    address:
+                        place.formattedAddress ||
+                        "Address unavailable",
+
+                    latitude:
+                        place.location?.latitude,
+
+                    longitude:
+                        place.location?.longitude
+                }));
 
             if (results.length === 0) {
+
                 setHospitalError(
                     "No hospitals found within 20 km of your location."
                 );
+
             } else {
+
                 setHospitals(results);
+
             }
 
         } catch (error) {
-            console.error("Nearby hospital error:", error);
+
+            console.error(
+                "Nearby hospital error:",
+                error
+            );
 
             setHospitalError(
                 "Unable to find nearby hospitals. Please try again."
             );
+
         } finally {
+
             setHospitalLoading(false);
+
+        }
+    };
+
+    // ==========================================
+    // FIND NEARBY GARAGES - GOOGLE PLACES
+    // ==========================================
+
+    const findNearbyGarages = async () => {
+        if (!location) {
+            setGarageError("Please detect your location first.");
+            return;
+        }
+
+        setGarageLoading(true);
+        setGarageError("");
+        setGarages([]);
+
+        try {
+            const apiKey =
+                import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+            const response = await fetch(
+                "https://places.googleapis.com/v1/places:searchNearby",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": apiKey,
+                        "X-Goog-FieldMask":
+                            "places.id,places.displayName,places.location,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber"
+                    },
+
+                    body: JSON.stringify({
+                        includedTypes: ["car_repair"],
+
+                        maxResultCount: 10,
+
+                        locationRestriction: {
+                            circle: {
+                                center: {
+                                    latitude: location.latitude,
+                                    longitude: location.longitude
+                                },
+                                radius: 20000
+                            }
+                        }
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(
+                    "Google Garage error:",
+                    errorText
+                );
+                throw new Error("Google Garage request failed");
+            }
+
+            const data = await response.json();
+
+            console.log(
+                "Google Garages:",
+                data
+            );
+
+            const results =
+                (data.places || []).map((place) => ({
+                    id: place.id,
+
+                    name:
+                        place.displayName?.text ||
+                        "Unnamed Garage",
+
+                    phone:
+                        place.internationalPhoneNumber ||
+                        place.nationalPhoneNumber ||
+                        "",
+
+                    address:
+                        place.formattedAddress ||
+                        "Address unavailable",
+
+                    latitude:
+                        place.location?.latitude,
+
+                    longitude:
+                        place.location?.longitude
+                }));
+
+            if (results.length === 0) {
+
+                setGarageError(
+                    "No garages found within 20 km of your location."
+                );
+
+            } else {
+
+                setGarages(results);
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Nearby garage error:",
+                error
+            );
+
+            setGarageError(
+                "Unable to find nearby garages. Please try again."
+            );
+
+        } finally {
+
+            setGarageLoading(false);
+
         }
     };
 
@@ -532,6 +705,7 @@ function EmergencySOS() {
                             </p>
 
 
+
                             <button
                                 type="button"
                                 onClick={findNearbyHospitals}
@@ -558,7 +732,6 @@ function EmergencySOS() {
                                     <h4 className="font-bold text-gray-800">
                                         Nearby Hospitals
                                     </h4>
-
                                     {hospitals.slice(0, 10).map((hospital) => (
 
                                         <div
@@ -566,15 +739,43 @@ function EmergencySOS() {
                                             className="border rounded-xl p-4 bg-gray-50"
                                         >
 
-                                            <p className="font-semibold">
+                                            <p className="font-semibold text-gray-900">
                                                 🏥 {hospital.name}
                                             </p>
 
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                📍 {hospital.latitude.toFixed(5)},
-                                                {" "}
-                                                {hospital.longitude.toFixed(5)}
+                                            <p className="text-sm text-gray-500 mt-2">
+                                                📍 {hospital.address}
                                             </p>
+
+                                            {hospital.phone ? (
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(hospital.phone);
+                                                        alert(`Hospital number copied: ${hospital.phone}`);
+                                                    }}
+                                                    className="mt-3 w-full py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+                                                >
+                                                    📞 {hospital.phone}
+                                                </button>
+
+                                            ) : (
+
+                                                <p className="text-sm text-gray-400 mt-3">
+                                                    📞 Phone number not available
+                                                </p>
+
+                                            )}
+
+                                            <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${hospital.latitude},${hospital.longitude}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-2 block w-full py-2 bg-blue-600 text-white rounded-lg font-semibold text-center hover:bg-blue-700 transition"
+                                            >
+                                                🗺️ Open in Google Maps
+                                            </a>
 
                                         </div>
 
@@ -608,10 +809,90 @@ function EmergencySOS() {
 
                             <button
                                 type="button"
-                                className="mt-5 w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition"
+                                onClick={findNearbyGarages}
+                                disabled={!location || garageLoading}
+                                className="mt-5 w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
                             >
-                                Find Nearby Garages
+                                {garageLoading
+                                    ? "🔧 Searching..."
+                                    : "🔧 Find Nearby Garages"}
                             </button>
+
+                            {garageError && (
+                                <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                                    <p className="text-sm font-semibold text-red-800">
+                                        ⚠️ {garageError}
+                                    </p>
+                                </div>
+                            )}
+
+                            {garageError && (
+                                <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                                    <p className="text-sm font-semibold text-red-800">
+                                        ⚠️ {garageError}
+                                    </p>
+                                </div>
+                            )}
+
+                            {garages.length > 0 && (
+                                <div className="mt-5 space-y-3">
+
+                                    <h4 className="font-bold text-gray-800">
+                                        Nearby Garages
+                                    </h4>
+
+                                    {garages.slice(0, 10).map((garage) => (
+
+                                        <div
+                                            key={garage.id}
+                                            className="border rounded-xl p-4 bg-gray-50"
+                                        >
+
+                                            <p className="font-semibold text-gray-900">
+                                                🔧 {garage.name}
+                                            </p>
+
+                                            <p className="text-sm text-gray-500 mt-2">
+                                                📍 {garage.address}
+                                            </p>
+
+                                            {garage.phone ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(
+                                                            garage.phone
+                                                        );
+
+                                                        alert(
+                                                            `Garage number copied: ${garage.phone}`
+                                                        );
+                                                    }}
+                                                    className="mt-3 w-full py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+                                                >
+                                                    📞 {garage.phone}
+                                                </button>
+                                            ) : (
+                                                <p className="text-sm text-gray-400 mt-3">
+                                                    📞 Phone number not available
+                                                </p>
+                                            )}
+
+                                            <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${garage.latitude},${garage.longitude}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-2 block w-full py-2 bg-blue-600 text-white rounded-lg font-semibold text-center hover:bg-blue-700 transition"
+                                            >
+                                                🗺️ Open in Google Maps
+                                            </a>
+
+                                        </div>
+
+                                    ))}
+
+                                </div>
+                            )}
 
                         </div>
 

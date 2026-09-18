@@ -2,13 +2,18 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
+
+import { getBluebook } from "../services/bluebookService";
+import { getInsurance } from "../services/insuranceService";
+import { getTax } from "../services/taxService";
 import { getVehicles } from "../services/vehicleService";
 import { useLanguage } from "../context/LanguageContext";
+import { getVehicleAlerts } from "../utils/vehicleAlerts";
 
 function Dashboard() {
   const navigate = useNavigate();
 
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
 
   const [fullName, setFullName] = useState("User");
   const [vehicles, setVehicles] = useState([]);
@@ -37,7 +42,51 @@ function Dashboard() {
         // Get user's vehicles
         const vehicleList = await getVehicles();
 
-        setVehicles(vehicleList);
+        const vehiclesWithDocuments = await Promise.all(
+          vehicleList.map(async (vehicle) => {
+
+            try {
+
+              const [bluebook, insurance, tax] =
+                await Promise.all([
+                  getBluebook(vehicle.id),
+                  getInsurance(vehicle.id),
+                  getTax(vehicle.id),
+                ]);
+
+              return {
+                ...vehicle,
+
+                // Document expiry information
+                bluebookExpiry:
+                  bluebook?.expiryDate || null,
+
+                insuranceExpiry:
+                  insurance?.validUntil || null,
+
+                taxExpiry:
+                  tax?.paidUntil || null,
+              };
+
+            } catch (error) {
+
+              console.error(
+                "Failed to load vehicle documents:",
+                vehicle.id,
+                error
+              );
+
+              return {
+                ...vehicle,
+                bluebookExpiry: null,
+                insuranceExpiry: null,
+                taxExpiry: null,
+              };
+            }
+          })
+        );
+
+        setVehicles(vehiclesWithDocuments);
       } catch (error) {
         console.error("Dashboard Error:", error);
       } finally {
@@ -48,7 +97,40 @@ function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  // Loading screen
+  // ==========================================
+  // HANDLE DOCUMENT ALERT CLICK
+  // ==========================================
+
+  const handleAlertClick = (vehicleId, documentType) => {
+    console.log("Vehicle Alert Clicked:", documentType);
+
+    if (!vehicleId) {
+      console.error("Vehicle ID is missing");
+      return;
+    }
+
+    switch (documentType) {
+      case "Bluebook":
+        navigate(`/vehicle/${vehicleId}/bluebook`);
+        break;
+
+      case "Insurance":
+        navigate(`/vehicle/${vehicleId}/insurance`);
+        break;
+
+      case "Tax":
+        navigate(`/vehicle/${vehicleId}/tax`);
+        break;
+
+      default:
+        console.warn("Unknown document type:", documentType);
+    }
+  };
+
+  // ==========================================
+  // LOADING SCREEN
+  // ==========================================
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -68,9 +150,9 @@ function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
 
-      {/* ==============================
-          Welcome Section
-      ============================== */}
+      {/* ==========================================
+          WELCOME SECTION
+      ========================================== */}
 
       <div className="mb-8">
 
@@ -85,9 +167,9 @@ function Dashboard() {
       </div>
 
 
-      {/* ==============================
-          Vehicles Section
-      ============================== */}
+      {/* ==========================================
+          VEHICLES SECTION
+      ========================================== */}
 
       <div className="mt-10">
 
@@ -98,9 +180,9 @@ function Dashboard() {
 
         {vehicles.length === 0 ? (
 
-          /* ============================
-             No Vehicles
-          ============================ */
+          /* ========================================
+             NO VEHICLES
+          ======================================== */
 
           <div className="bg-white rounded-2xl shadow-sm border p-8 text-center">
 
@@ -117,6 +199,7 @@ function Dashboard() {
             </p>
 
             <button
+              type="button"
               onClick={() => navigate("/add-vehicle")}
               className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl"
             >
@@ -127,130 +210,288 @@ function Dashboard() {
 
         ) : (
 
-          /* ============================
-             Vehicle List
-          ============================ */
+          /* ========================================
+             VEHICLE LIST
+          ======================================== */
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {vehicles.map((vehicle) => (
+            {vehicles.map((vehicle) => {
 
-              <div
-                key={vehicle.id}
-                className="bg-white rounded-2xl shadow-sm border p-6"
-              >
+              // Calculate document alerts
+              const alerts = getVehicleAlerts(vehicle);
 
-                <h3 className="text-xl font-bold text-gray-800">
-                  {vehicle.brand} {vehicle.model}
-                </h3>
+              return (
 
-                <p className="text-gray-500 mt-2">
-                  {vehicle.vehicleNumber}
-                </p>
+                <div
+                  key={vehicle.id}
+                  className="bg-white rounded-2xl shadow-sm border p-6"
+                >
 
-                <p className="text-green-600 mt-3">
-                  🚘 {vehicle.vehicleType}
-                </p>
+                  {/* ==================================
+                      VEHICLE INFORMATION
+                  ================================== */}
 
-                <p className="text-gray-500 mt-2">
-                  {t("color")}: {vehicle.color}
-                </p>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {vehicle.brand} {vehicle.model}
+                  </h3>
+
+                  <p className="text-gray-500 mt-2">
+                    {vehicle.vehicleNumber}
+                  </p>
+
+                  <p className="text-green-600 mt-3">
+                    🚘 {vehicle.vehicleType}
+                  </p>
+
+                  <p className="text-gray-500 mt-2">
+                    {t("color")}: {vehicle.color}
+                  </p>
 
 
-                {/* Status */}
+                  {/* ==================================
+                      VEHICLE STATUS
+                  ================================== */}
 
-                <div className="mt-4">
+                  <div className="mt-4">
 
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${vehicle.status === "Verified"
-                      ? "bg-green-100 text-green-700"
-                      : vehicle.status === "Rejected"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                      }`}
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${vehicle.status === "Verified"
+                        ? "bg-green-100 text-green-700"
+                        : vehicle.status === "Rejected"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                        }`}
+                    >
+                      {vehicle.status === "Verified"
+                        ? t("verified")
+                        : vehicle.status === "Rejected"
+                          ? t("rejected")
+                          : t("pending")}
+                    </span>
+
+                  </div>
+
+                  {/* ==================================
+    VEHICLE HEALTH SUMMARY
+================================== */}
+
+                  <div className="mt-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🩺</span>
+
+                      <span className="text-sm font-bold text-blue-800">
+                        Vehicle Health
+                      </span>
+                    </div>
+
+                    {alerts.some(
+                      (alert) =>
+                        alert.status === "expired" ||
+                        alert.status === "today" ||
+                        alert.status === "warning"
+                    ) ? (
+
+                      <span className="text-xs font-semibold text-orange-600">
+                        🟠 Attention Needed
+                      </span>
+
+                    ) : (
+
+                      <span className="text-xs font-semibold text-green-600">
+                        🟢 Healthy
+                      </span>
+
+                    )}
+
+                  </div>
+
+                  {/* ==================================
+                      VEHICLE ALERTS
+                  ================================== */}
+
+                  {alerts.length > 0 && (
+
+                    <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+
+                      <p className="text-sm font-bold text-gray-800 mb-3">
+                        🔔 Vehicle Alerts
+                      </p>
+
+                      <div className="space-y-2">
+
+                        {alerts.map((alert) => {
+
+                          // Don't display alerts without a valid date
+                          if (alert.status === "unknown") {
+                            return null;
+                          }
+
+                          const alertIcon =
+                            alert.status === "expired"
+                              ? "🔴"
+                              : alert.status === "warning"
+                                ? "🟠"
+                                : alert.status === "today"
+                                  ? "⚠️"
+                                  : "🟢";
+
+                          return (
+
+                            <button
+                              key={alert.documentType}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                console.log("ALERT CLICKED:", alert.documentType);
+
+                                handleAlertClick(
+                                  vehicle.id,
+                                  alert.documentType
+                                );
+                              }}
+                              className={`relative z-50 block w-full text-left p-3 rounded-lg cursor-pointer transition hover:shadow-md ${alert.status === "expired"
+                                ? "bg-red-50 text-red-700 hover:bg-red-100"
+                                : alert.status === "warning"
+                                  ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                                  : alert.status === "today"
+                                    ? "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                                    : "bg-green-50 text-green-700 hover:bg-green-100"
+                                }`}
+                            >
+                              <p className="text-sm font-semibold">
+                                {alert.status === "expired"
+                                  ? "🔴"
+                                  : alert.status === "warning"
+                                    ? "🟠"
+                                    : alert.status === "today"
+                                      ? "⚠️"
+                                      : "🟢"}{" "}
+                                {alert.documentType}
+                              </p>
+
+                              <p className="text-xs mt-1">
+                                {alert.message}
+                              </p>
+
+                              <p className="text-xs font-semibold mt-2">
+                                View document →
+                              </p>
+                            </button>
+
+                          );
+                        })}
+
+                      </div>
+
+                    </div>
+
+                  )}
+
+
+                  {/* ==================================
+                      PENDING STATUS MESSAGE
+                  ================================== */}
+
+                  {vehicle.status === "Pending" && (
+
+                    <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+
+                      <p className="text-sm font-semibold text-yellow-800">
+                        ⏳ Verification Pending
+                      </p>
+
+                      <p className="text-sm text-yellow-700 mt-1">
+                        Your vehicle is waiting for Admin verification.
+                      </p>
+
+                    </div>
+
+                  )}
+
+
+                  {/* ==================================
+                      VERIFIED STATUS MESSAGE
+                  ================================== */}
+
+                  {vehicle.status === "Verified" && (
+
+                    <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
+
+                      <p className="text-sm font-semibold text-green-800">
+                        ✓ Vehicle Verified
+                      </p>
+
+                      <p className="text-sm text-green-700 mt-1">
+                        Your vehicle has been successfully verified.
+                      </p>
+
+                    </div>
+
+                  )}
+
+
+                  {/* ==================================
+                      REJECTED STATUS MESSAGE
+                  ================================== */}
+
+                  {vehicle.status === "Rejected" && (
+
+                    <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+
+                      <p className="text-sm font-semibold text-red-800">
+                        ✕ Vehicle Rejected
+                      </p>
+
+                      <p className="text-xs font-semibold text-red-700 mt-2">
+                        Reason
+                      </p>
+
+                      <p className="text-sm text-red-700 mt-1">
+                        {vehicle.rejectionReason
+                          ? vehicle.rejectionReason
+                          : "Details not submitted"}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/add-vehicle/manual?resubmit=${vehicle.id}`
+                          )
+                        }
+                        className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold transition"
+                      >
+                        🔄 Resubmit Vehicle
+                      </button>
+
+                    </div>
+
+                  )}
+
+
+                  {/* ==================================
+                      MANAGE VEHICLE
+                  ================================== */}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(`/vehicle/${vehicle.id}`)
+                    }
+                    className="mt-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl"
                   >
-                    {vehicle.status === "Verified"
-                      ? t("verified")
-                      : vehicle.status === "Rejected"
-                        ? t("rejected")
-                        : t("pending")}
-                  </span>
+                    {t("manageVehicle")}
+                  </button>
 
                 </div>
 
-                {/* Status Message */}
+              );
 
-                {vehicle.status === "Pending" && (
-                  <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                    <p className="text-sm font-semibold text-yellow-800">
-                      ⏳ Verification Pending
-                    </p>
-
-                    <p className="text-sm text-yellow-700 mt-1">
-                      Your vehicle is waiting for Admin verification.
-                    </p>
-                  </div>
-                )}
-
-
-                {vehicle.status === "Verified" && (
-                  <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
-                    <p className="text-sm font-semibold text-green-800">
-                      ✓ Vehicle Verified
-                    </p>
-
-                    <p className="text-sm text-green-700 mt-1">
-                      Your vehicle has been successfully verified.
-                    </p>
-                  </div>
-                )}
-
-
-                {vehicle.status === "Rejected" && (
-                  <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
-
-                    <p className="text-sm font-semibold text-red-800">
-                      ✕ Vehicle Rejected
-                    </p>
-
-                    <p className="text-xs font-semibold text-red-700 mt-2">
-                      Reason
-                    </p>
-
-                    <p className="text-sm text-red-700 mt-1">
-                      {vehicle.rejectionReason
-                        ? vehicle.rejectionReason
-                        : "Details not submitted"}
-                    </p>
-
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/add-vehicle/manual?resubmit=${vehicle.id}`
-                        )
-                      }
-                      className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold transition"
-                    >
-                      🔄 Resubmit Vehicle
-                    </button>
-
-                  </div>
-                )}
-
-                {/* Manage Vehicle */}
-
-                <button
-                  onClick={() =>
-                    navigate(`/vehicle/${vehicle.id}`)
-                  }
-                  className="mt-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl"
-                >
-                  {t("manageVehicle")}
-                </button>
-
-              </div>
-
-            ))}
+            })}
 
           </div>
 
@@ -259,9 +500,9 @@ function Dashboard() {
       </div>
 
 
-      {/* ==============================
-          Add Another Vehicle
-      ============================== */}
+      {/* ==========================================
+          ADD ANOTHER VEHICLE
+      ========================================== */}
 
       {vehicles.length > 0 && (
 
@@ -276,6 +517,7 @@ function Dashboard() {
           </p>
 
           <button
+            type="button"
             onClick={() => navigate("/add-vehicle")}
             className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl"
           >

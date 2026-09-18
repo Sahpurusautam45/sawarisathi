@@ -30,6 +30,7 @@ import VehicleDetails from "./pages/VehicleDetails";
 import Bluebook from "./pages/Bluebook";
 import Insurance from "./pages/Insurance";
 import Tax from "./pages/Tax";
+import Documents from "./pages/Documents";
 
 // Admin Pages
 import AdminDashboard from "./admin/AdminDashboard";
@@ -176,6 +177,15 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Bluebook />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vehicle/:vehicleId/documents"
+          element={
+            <ProtectedRoute>
+              <Documents />
             </ProtectedRoute>
           }
         />

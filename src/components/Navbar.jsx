@@ -33,7 +33,7 @@ function Navbar() {
   };
 
   return (
-    <nav className="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-blue-700 text-white shadow-lg relative z-50">
 
       <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-4">
 

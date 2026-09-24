@@ -9,6 +9,10 @@ import { getTax } from "../services/taxService";
 import { getVehicles } from "../services/vehicleService";
 import { useLanguage } from "../context/LanguageContext";
 import { getVehicleAlerts } from "../utils/vehicleAlerts";
+import {
+  createExpiryNotificationOnce,
+  resolveExpiryNotification,
+} from "../services/userNotificationService";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -19,6 +23,143 @@ function Dashboard() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const createVehicleExpiryNotifications = async (
+    vehicleList
+  ) => {
+    try {
+      console.log(
+        "🔔 Starting expiry notification check..."
+      );
+
+      for (const vehicle of vehicleList) {
+
+        console.log(
+          "🚗 Checking vehicle:",
+          vehicle
+        );
+
+        const alerts = getVehicleAlerts(vehicle);
+
+        console.log(
+          "📋 Alerts for vehicle:",
+          vehicle.id,
+          alerts
+        );
+
+        for (const alert of alerts) {
+
+          console.log(
+            "🔍 Checking alert:",
+            alert
+          );
+
+          if (
+            alert.status !== "warning" &&
+            alert.status !== "today" &&
+            alert.status !== "expired"
+          ) {
+            console.log(
+              "🟢 Alert is valid. Resolving old notification..."
+            );
+
+            try {
+              await resolveExpiryNotification({
+                vehicleId: vehicle.id,
+                documentType: alert.documentType,
+              });
+
+              console.log(
+                "✅ Old expiry notification resolved:",
+                vehicle.id,
+                alert.documentType
+              );
+            } catch (resolveError) {
+              console.error(
+                "❌ Failed to resolve expiry notification:",
+                resolveError
+              );
+            }
+
+            continue;
+          }
+
+          console.log(
+            "⚠️ Creating notification for:",
+            {
+              vehicleId: vehicle.id,
+              vehicleName:
+                `${vehicle.brand || ""} ${vehicle.model || ""}`.trim()
+                || "Vehicle",
+              vehicleNumber:
+                vehicle.vehicleNumber || "Unknown",
+              documentType:
+                alert.documentType,
+              status:
+                alert.status,
+              message:
+                alert.message,
+            }
+          );
+
+          try {
+
+            const result =
+              await createExpiryNotificationOnce({
+                vehicleId: vehicle.id,
+
+                vehicleName:
+                  `${vehicle.brand || ""} ${vehicle.model || ""}`.trim()
+                  || "Vehicle",
+
+                vehicleNumber:
+                  vehicle.vehicleNumber || "Unknown",
+
+                documentType:
+                  alert.documentType,
+
+                status:
+                  alert.status,
+
+                message:
+                  alert.message,
+              });
+
+            console.log(
+              "✅ Notification result:",
+              result
+            );
+
+          } catch (notificationError) {
+
+            console.error(
+              "❌ Notification failed for this alert:",
+              {
+                vehicleId: vehicle.id,
+                vehicleName:
+                  vehicle.brand || vehicle.model,
+                documentType:
+                  alert.documentType,
+                status:
+                  alert.status,
+              },
+              notificationError
+            );
+          }
+        }
+      }
+
+      console.log(
+        "🔔 Expiry notification check finished."
+      );
+
+    } catch (error) {
+
+      console.error(
+        "❌ Expiry notification system error:",
+        error
+      );
+    }
+  };
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -87,6 +228,10 @@ function Dashboard() {
         );
 
         setVehicles(vehiclesWithDocuments);
+
+        await createVehicleExpiryNotifications(
+          vehiclesWithDocuments
+        );
       } catch (error) {
         console.error("Dashboard Error:", error);
       } finally {
@@ -96,6 +241,7 @@ function Dashboard() {
 
     fetchDashboardData();
   }, []);
+
 
   // ==========================================
   // HANDLE DOCUMENT ALERT CLICK
@@ -165,6 +311,7 @@ function Dashboard() {
         </p>
 
       </div>
+
 
 
       {/* ==========================================
@@ -338,6 +485,7 @@ function Dashboard() {
                                   : "🟢";
 
                           return (
+
 
                             <button
                               key={alert.documentType}
@@ -527,6 +675,7 @@ function Dashboard() {
         </div>
 
       )}
+
 
     </div>
   );

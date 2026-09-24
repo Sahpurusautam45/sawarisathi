@@ -57,6 +57,10 @@ function Tax() {
   const [isCorrecting, setIsCorrecting] =
     useState(false);
 
+
+  const [isRenewing, setIsRenewing] =
+    useState(false);
+
   // ==========================================
   // SAVING
   // ==========================================
@@ -175,6 +179,8 @@ function Tax() {
       ? "Active"
       : "Expired";
 
+
+
   // ==========================================
   // START CORRECTION
   // ==========================================
@@ -191,6 +197,23 @@ function Tax() {
     );
 
     setIsCorrecting(true);
+  };
+
+
+
+  const handleStartRenewal = () => {
+    setIsRenewing(true);
+    setIsCorrecting(false);
+
+    // Scroll to the tax form
+    setTimeout(() => {
+      document
+        .getElementById("tax-form")
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 100);
   };
 
   // ==========================================
@@ -239,6 +262,72 @@ function Tax() {
 
         status: "Active",
       });
+
+      // ======================================
+      // TAX RENEWAL SUBMISSION
+      // ======================================
+
+      if (isRenewing) {
+        const vehicleRef = doc(
+          db,
+          "vehicles",
+          vehicleId
+        );
+
+        await updateDoc(vehicleRef, {
+          taxStatus: "Pending",
+
+          taxRenewalPending: true,
+
+          taxRenewalSubmittedAt:
+            serverTimestamp(),
+
+          taxRejectionReason: "",
+
+          updatedAt:
+            serverTimestamp(),
+        });
+
+        // ==================================
+        // NOTIFY ADMIN
+        // ==================================
+
+        await createAdminNotification({
+          vehicleId,
+          vehicleNumber:
+            vehicle?.vehicleNumber || "",
+          ownerId:
+            vehicle?.ownerId || "",
+          ownerName:
+            vehicle?.ownerName || "",
+          documentType: "Tax",
+
+          type: "document_renewal",
+          category: "documents",
+
+          title: "Tax Renewal Submitted",
+
+          message:
+            `Tax renewal for ${vehicle?.vehicleNumber || "vehicle"} has been submitted for verification.`,
+        });
+
+        setTax({
+          receiptNumber:
+            receiptNumber.trim(),
+          paidUntil,
+          status: "Active",
+        });
+
+        setTaxAdminStatus("Pending");
+
+        setIsRenewing(false);
+
+        alert(
+          "🔄 Tax renewal submitted successfully. It is now pending Admin verification."
+        );
+
+        return;
+      }
 
       // ======================================
       // RESUBMISSION
@@ -585,6 +674,17 @@ function Tax() {
                 </span>
               </p>
 
+              {taxStatus === "Expired" &&
+                taxAdminStatus === "Verified" && (
+                  <button
+                    type="button"
+                    onClick={handleStartRenewal}
+                    className="px-4 py-2 rounded-lg font-medium transition"
+                  >
+                    🔄 Renew / Update Tax
+                  </button>
+                )}
+
             </div>
           )}
 
@@ -642,7 +742,7 @@ function Tax() {
             TAX FORM
         ==================================== */}
 
-        {(!tax || isCorrecting) && (
+        {(!tax || isCorrecting || isRenewing) && (
 
           <div className="mt-8 space-y-5">
 
@@ -651,9 +751,7 @@ function Tax() {
             ================================== */}
 
             {isCorrecting && (
-
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-
                 <h2 className="text-xl font-bold text-blue-700">
                   ✏️ Correct Tax Information
                 </h2>
@@ -661,7 +759,18 @@ function Tax() {
                 <p className="text-blue-600 mt-2">
                   Correct the rejected information and submit it again for Admin verification.
                 </p>
+              </div>
+            )}
 
+            {isRenewing && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+                <h2 className="text-xl font-bold text-green-700">
+                  🔄 Renew Vehicle Tax
+                </h2>
+
+                <p className="text-green-600 mt-2">
+                  Enter your new tax information and submit it for Admin verification.
+                </p>
               </div>
             )}
 

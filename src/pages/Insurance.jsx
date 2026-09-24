@@ -71,6 +71,8 @@ function Insurance() {
   const [isCorrecting, setIsCorrecting] =
     useState(false);
 
+  const [isRenewing, setIsRenewing] = useState(false);
+
 
   // ==========================================
   // SAVING
@@ -78,6 +80,27 @@ function Insurance() {
 
   const [saving, setSaving] =
     useState(false);
+
+  // ==========================================
+  // INSURANCE EXPIRY CHECK
+  // ==========================================
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isInsuranceExpired =
+    insurance?.validUntil &&
+    new Date(insurance.validUntil) < today;
+
+  console.log(
+    "🔍 INSURANCE EXPIRY:",
+    "validUntil =", insurance?.validUntil,
+    "| today =", today.toISOString(),
+    "| parsed =", insurance?.validUntil
+    ? new Date(insurance.validUntil).toISOString()
+    : null,
+    "| expired =", isInsuranceExpired
+  );
 
 
   // ==========================================
@@ -263,6 +286,9 @@ function Insurance() {
         : [];
 
 
+
+
+
   // ==========================================
   // START CORRECTION
   // ==========================================
@@ -323,6 +349,42 @@ function Insurance() {
 
   };
 
+  // ==========================================
+  // START INSURANCE RENEWAL
+  // ==========================================
+
+  // ==========================================
+  // START INSURANCE RENEWAL
+  // ==========================================
+
+  const handleStartRenewal = () => {
+
+    if (!insurance) {
+      return;
+    }
+
+    // Keep existing insurance information
+    setCategory(
+      insurance.category || ""
+    );
+
+    setCompany(
+      insurance.company || ""
+    );
+
+    setOtherCompany("");
+
+    // KEEP EXISTING POLICY NUMBER
+    setPolicyNumber(
+      insurance.policyNumber || ""
+    );
+
+    // User will enter ONLY the new expiry date
+    setValidUntil("");
+
+    setIsRenewing(true);
+    setIsCorrecting(false);
+  };
 
   // ==========================================
   // CANCEL CORRECTION
@@ -391,34 +453,52 @@ function Insurance() {
   const handleSubmit = async () => {
 
     // ========================================
-    // VALIDATION
+    // RENEWAL VALIDATION
     // ========================================
 
-    if (
-      !category ||
-      !company ||
-      !policyNumber.trim() ||
-      !validUntil
-    ) {
+    if (isRenewing) {
 
-      alert(
-        "Please fill all required fields."
-      );
+      if (!insurance) {
+        alert("Existing insurance information not found.");
+        return;
+      }
 
-      return;
+      if (!validUntil) {
+        alert("Please select the new insurance expiry date.");
+        return;
+      }
+
     }
 
+    // ========================================
+    // NORMAL / CORRECTION VALIDATION
+    // ========================================
 
-    if (
-      company === "Other" &&
-      !otherCompany.trim()
-    ) {
+    if (!isRenewing) {
 
-      alert(
-        "Please enter the insurance company name."
-      );
+      if (
+        !category ||
+        !company ||
+        !policyNumber.trim() ||
+        !validUntil
+      ) {
+        alert(
+          "Please fill all required fields."
+        );
 
-      return;
+        return;
+      }
+
+      if (
+        company === "Other" &&
+        !otherCompany.trim()
+      ) {
+        alert(
+          "Please enter the insurance company name."
+        );
+
+        return;
+      }
     }
 
 
@@ -426,6 +506,162 @@ function Insurance() {
 
       setSaving(true);
 
+
+      // ======================================
+      // RENEWAL
+      // ======================================
+
+      if (isRenewing) {
+
+        const finalCompany =
+          insurance.company || company;
+
+        const finalCategory =
+          insurance.category || category;
+
+        const finalPolicyNumber =
+          insurance.policyNumber ||
+          policyNumber.trim();
+
+
+        // ====================================
+        // SAVE RENEWED INSURANCE
+        // ====================================
+
+        await saveInsurance(
+          vehicleId,
+          {
+            category: finalCategory,
+
+            company: finalCompany,
+
+            policyNumber:
+              finalPolicyNumber,
+
+            validUntil,
+          }
+        );
+
+
+        // ====================================
+        // UPDATE VEHICLE STATUS
+        // ====================================
+
+        const vehicleRef =
+          doc(
+            db,
+            "vehicles",
+            vehicleId
+          );
+
+        await updateDoc(
+          vehicleRef,
+          {
+
+            insuranceStatus:
+              "Pending",
+
+            insuranceRenewalPending:
+              true,
+
+            insuranceRenewedAt:
+              serverTimestamp(),
+
+            insuranceRejectionReason:
+              "",
+
+            updatedAt:
+              serverTimestamp(),
+          }
+        );
+
+
+        // ====================================
+        // UPDATE LOCAL INSURANCE
+        // ====================================
+
+        setInsurance({
+          category:
+            finalCategory,
+
+          company:
+            finalCompany,
+
+          policyNumber:
+            finalPolicyNumber,
+
+          validUntil,
+
+          status:
+            "Pending Verification",
+        });
+
+
+        setInsuranceStatus(
+          "Pending"
+        );
+
+        setInsuranceRejectionReason(
+          ""
+        );
+
+
+        // ====================================
+        // ADMIN NOTIFICATION
+        // ====================================
+
+        await createAdminNotification({
+
+          vehicleId,
+
+          vehicleNumber:
+            vehicle?.vehicleNumber || "",
+
+          ownerId:
+            vehicle?.ownerId || "",
+
+          ownerName:
+            vehicle?.ownerName || "",
+
+          documentType:
+            "Insurance",
+
+          type:
+            "document_submission",
+
+          category:
+            "documents",
+
+          title:
+            "Insurance Renewal Submitted",
+
+          message:
+            `Insurance renewal for ${vehicle?.vehicleNumber ||
+            "vehicle"
+            } has been submitted for verification.`,
+
+        });
+
+
+        // ====================================
+        // CLOSE RENEWAL FORM
+        // ====================================
+
+        setIsRenewing(false);
+
+
+        alert(
+          "🔄 Insurance renewal submitted successfully. It is now pending Admin verification."
+        );
+
+
+        return;
+      }
+
+
+      // ======================================
+      // NORMAL / CORRECTION COMPANY
+      // ======================================
 
       const finalCompany =
         company === "Other"
@@ -441,9 +677,13 @@ function Insurance() {
         vehicleId,
         {
           category,
-          company: finalCompany,
+
+          company:
+            finalCompany,
+
           policyNumber:
             policyNumber.trim(),
+
           validUntil,
         }
       );
@@ -467,33 +707,17 @@ function Insurance() {
           vehicleRef,
           {
 
-            // --------------------------------
-            // RESET STATUS
-            // --------------------------------
-
             insuranceStatus:
               "Pending",
 
-            // --------------------------------
-            // CLEAR REJECTION
-            // --------------------------------
-
             insuranceRejectionReason:
               "",
-
-            // --------------------------------
-            // RESUBMISSION
-            // --------------------------------
 
             insuranceResubmitted:
               true,
 
             insuranceResubmittedAt:
               serverTimestamp(),
-
-            // --------------------------------
-            // UPDATE TIME
-            // --------------------------------
 
             updatedAt:
               serverTimestamp(),
@@ -535,7 +759,7 @@ function Insurance() {
 
 
         // ==================================
-        // 🔔 RESUBMISSION NOTIFICATION
+        // ADMIN NOTIFICATION
         // ==================================
 
         await createAdminNotification({
@@ -557,9 +781,11 @@ function Insurance() {
         });
 
 
-        setIsCorrecting(
-          false
-        );
+        // ==================================
+        // CLOSE CORRECTION FORM
+        // ==================================
+
+        setIsCorrecting(false);
 
 
         alert(
@@ -594,7 +820,7 @@ function Insurance() {
 
 
       // ==================================
-      // 🔔 NEW INSURANCE NOTIFICATION
+      // NEW INSURANCE NOTIFICATION
       // ==================================
 
       await createAdminNotification({
@@ -623,7 +849,9 @@ function Insurance() {
           "New Insurance Submitted",
 
         message:
-          `Insurance for ${vehicle?.vehicleNumber || "vehicle"} has been submitted for verification.`,
+          `Insurance for ${vehicle?.vehicleNumber ||
+          "vehicle"
+          } has been submitted for verification.`,
 
       });
 
@@ -642,9 +870,11 @@ function Insurance() {
 
 
       alert(
-        isCorrecting
-          ? "Failed to resubmit insurance. Please try again."
-          : "Failed to save insurance."
+        isRenewing
+          ? "Failed to renew insurance. Please try again."
+          : isCorrecting
+            ? "Failed to resubmit insurance. Please try again."
+            : "Failed to save insurance."
       );
 
 
@@ -656,307 +886,142 @@ function Insurance() {
 
   };
 
+// ==========================================
+// LOADING
+// ==========================================
 
-  // ==========================================
-  // LOADING
-  // ==========================================
-
-  if (!vehicle) {
-
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-
-        <p>
-          Loading...
-        </p>
-
-      </div>
-    );
-
-  }
-
-
-  // ==========================================
-  // PAGE
-  // ==========================================
+if (!vehicle) {
 
   return (
+    <div className="min-h-screen flex items-center justify-center">
 
-    <div className="min-h-screen bg-slate-100 p-8">
+      <p>
+        Loading...
+      </p>
 
-      {/* ======================================
+    </div>
+  );
+
+}
+
+
+// ==========================================
+// PAGE
+// ==========================================
+
+return (
+
+  <div className="min-h-screen bg-slate-100 p-8">
+
+    {/* ======================================
           BACK
       ====================================== */}
 
-      <button
-        type="button"
-        onClick={() =>
-          navigate(
-            `/vehicle/${vehicleId}`
-          )
-        }
-        className="mb-6 bg-white border px-4 py-2 rounded-xl hover:bg-slate-100 transition"
-      >
+    <button
+      type="button"
+      onClick={() =>
+        navigate(
+          `/vehicle/${vehicleId}`
+        )
+      }
+      className="mb-6 bg-white border px-4 py-2 rounded-xl hover:bg-slate-100 transition"
+    >
 
-        ← Back to Vehicle Details
+      ← Back to Vehicle Details
 
-      </button>
-
-
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+    </button>
 
 
-        {/* ====================================
+    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+
+
+      {/* ====================================
             HEADER
         ==================================== */}
 
-        <h1 className="text-3xl font-bold text-center">
+      <h1 className="text-3xl font-bold text-center">
 
-          🛡 Insurance
+        🛡 Insurance
 
-        </h1>
+      </h1>
 
 
-        {/* ====================================
+      {/* ====================================
             VEHICLE CARD
         ==================================== */}
 
-        <div className="bg-slate-100 rounded-xl p-5 mt-6 text-center">
+      <div className="bg-slate-100 rounded-xl p-5 mt-6 text-center">
 
-          <h2 className="text-xl font-bold">
+        <h2 className="text-xl font-bold">
 
-            🚗 {vehicle.brand} {vehicle.model}
+          🚗 {vehicle.brand} {vehicle.model}
 
-          </h2>
-
-
-          <p className="text-gray-600 mt-2">
-
-            {vehicle.vehicleNumber}
-
-          </p>
-
-        </div>
+        </h2>
 
 
-        {/* ====================================
+        <p className="text-gray-600 mt-2">
+
+          {vehicle.vehicleNumber}
+
+        </p>
+
+      </div>
+
+
+      {/* ====================================
             REJECTED INSURANCE
         ==================================== */}
 
-        {insuranceStatus === "Rejected" &&
-          insurance &&
-          !isCorrecting && (
+      {insuranceStatus === "Rejected" &&
+        insurance &&
+        !isCorrecting && (
 
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6 mt-8">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mt-8">
 
 
-              <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
 
-                <h2 className="text-2xl font-bold text-red-700">
+              <h2 className="text-2xl font-bold text-red-700">
 
-                  ❌ Insurance Rejected
-
-                </h2>
-
-
-                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">
-
-                  Rejected
-
-                </span>
-
-              </div>
-
-
-              {/* REASON */}
-
-              <div className="mt-4 bg-white border border-red-100 rounded-xl p-4">
-
-                <p className="font-semibold text-gray-700">
-
-                  Rejection Reason
-
-                </p>
-
-
-                <p className="text-red-600 mt-2">
-
-                  {insuranceRejectionReason ||
-                    "No rejection reason was provided by the Admin."}
-
-                </p>
-
-              </div>
-
-
-              {/* CURRENT DATA */}
-
-              <div className="bg-white rounded-xl p-4 mt-4 space-y-2">
-
-                <p>
-                  <strong>
-                    Category:
-                  </strong>{" "}
-                  {insurance.category}
-                </p>
-
-
-                <p>
-                  <strong>
-                    Company:
-                  </strong>{" "}
-                  {insurance.company}
-                </p>
-
-
-                <p>
-                  <strong>
-                    Policy Number:
-                  </strong>{" "}
-                  {insurance.policyNumber}
-                </p>
-
-
-                <p>
-                  <strong>
-                    Valid Until:
-                  </strong>{" "}
-                  {insurance.validUntil}
-                </p>
-
-              </div>
-
-
-              <button
-                type="button"
-                onClick={
-                  handleStartCorrection
-                }
-                className="w-full mt-5 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition"
-              >
-
-                ✏️ Correct & Resubmit Insurance
-
-              </button>
-
-
-            </div>
-
-          )}
-
-
-        {/* ====================================
-            PENDING
-        ==================================== */}
-
-        {insuranceStatus === "Pending" &&
-          insurance &&
-          !isCorrecting && (
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 mt-8">
-
-              <p className="text-yellow-700 font-semibold">
-
-                ⏳ Insurance is currently pending Admin verification.
-
-              </p>
-
-
-              <p className="text-yellow-600 text-sm mt-1">
-
-                Please wait while our Admin reviews your insurance information.
-
-              </p>
-
-            </div>
-
-          )}
-
-
-        {/* ====================================
-            VERIFIED
-        ==================================== */}
-
-        {insuranceStatus === "Verified" &&
-          insurance &&
-          !isCorrecting && (
-
-            <div className="bg-green-50 border border-green-200 rounded-xl p-6 mt-8">
-
-
-              <div className="flex items-center justify-between mb-4">
-
-                <h2 className="text-2xl font-bold">
-
-                  🛡 Insurance Details
-
-                </h2>
-
-
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-
-                  ✓ Verified
-
-                </span>
-
-              </div>
-
-
-              <p>
-                <strong>
-                  Category:
-                </strong>{" "}
-                {insurance.category}
-              </p>
-
-
-              <p className="mt-3">
-                <strong>
-                  Company:
-                </strong>{" "}
-                {insurance.company}
-              </p>
-
-
-              <p className="mt-3">
-                <strong>
-                  Policy Number:
-                </strong>{" "}
-                {insurance.policyNumber}
-              </p>
-
-
-              <p className="mt-3">
-                <strong>
-                  Valid Until:
-                </strong>{" "}
-                {insurance.validUntil}
-              </p>
-
-            </div>
-
-          )}
-
-
-        {/* ====================================
-            OLD / UNKNOWN STATUS
-        ==================================== */}
-
-        {insurance &&
-          !isCorrecting &&
-          insuranceStatus !== "Rejected" &&
-          insuranceStatus !== "Pending" &&
-          insuranceStatus !== "Verified" && (
-
-            <div className="bg-gray-50 border rounded-xl p-6 mt-8">
-
-              <h2 className="text-2xl font-bold mb-4">
-
-                🛡 Insurance Details
+                ❌ Insurance Rejected
 
               </h2>
 
 
+              <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">
+
+                Rejected
+
+              </span>
+
+            </div>
+
+
+            {/* REASON */}
+
+            <div className="mt-4 bg-white border border-red-100 rounded-xl p-4">
+
+              <p className="font-semibold text-gray-700">
+
+                Rejection Reason
+
+              </p>
+
+
+              <p className="text-red-600 mt-2">
+
+                {insuranceRejectionReason ||
+                  "No rejection reason was provided by the Admin."}
+
+              </p>
+
+            </div>
+
+
+            {/* CURRENT DATA */}
+
+            <div className="bg-white rounded-xl p-4 mt-4 space-y-2">
+
               <p>
                 <strong>
                   Category:
@@ -965,7 +1030,7 @@ function Insurance() {
               </p>
 
 
-              <p className="mt-3">
+              <p>
                 <strong>
                   Company:
                 </strong>{" "}
@@ -973,7 +1038,7 @@ function Insurance() {
               </p>
 
 
-              <p className="mt-3">
+              <p>
                 <strong>
                   Policy Number:
                 </strong>{" "}
@@ -991,193 +1056,379 @@ function Insurance() {
 
             </div>
 
-          )}
+
+            <button
+              type="button"
+              onClick={
+                handleStartCorrection
+              }
+              className="w-full mt-5 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition"
+            >
+
+              ✏️ Correct & Resubmit Insurance
+
+            </button>
 
 
-        {/* ====================================
+          </div>
+
+        )}
+
+
+      {/* ====================================
+            PENDING
+        ==================================== */}
+
+      {insuranceStatus === "Pending" &&
+        insurance &&
+        !isCorrecting && (
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 mt-8">
+
+            <p className="text-yellow-700 font-semibold">
+
+              ⏳ Insurance is currently pending Admin verification.
+
+            </p>
+
+
+            <p className="text-yellow-600 text-sm mt-1">
+
+              Please wait while our Admin reviews your insurance information.
+
+            </p>
+
+          </div>
+
+        )}
+
+
+      {/* ====================================
+    VERIFIED
+==================================== */}
+
+      {insuranceStatus === "Verified" &&
+        insurance &&
+        !isCorrecting &&
+        !isRenewing && (
+
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6 mt-8">
+
+            <div className="flex items-center justify-between mb-4">
+
+              <h2 className="text-2xl font-bold">
+                🛡 Insurance Details
+              </h2>
+
+              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+                ✓ Verified
+              </span>
+
+            </div>
+
+
+            <p>
+              <strong>
+                Category:
+              </strong>{" "}
+              {insurance.category}
+            </p>
+
+
+            <p className="mt-3">
+              <strong>
+                Company:
+              </strong>{" "}
+              {insurance.company}
+            </p>
+
+
+            <p className="mt-3">
+              <strong>
+                Policy Number:
+              </strong>{" "}
+              {insurance.policyNumber}
+            </p>
+
+
+            <p className="mt-3">
+              <strong>
+                Valid Until:
+              </strong>{" "}
+              {insurance.validUntil}
+            </p>
+
+
+            {/* ==================================
+        RENEWAL BUTTON
+    ================================== */}
+
+            {isInsuranceExpired && (
+
+              <button
+                type="button"
+                onClick={handleStartRenewal}
+                className="w-full mt-5 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-semibold transition"
+              >
+                🔄 Renew / Update Insurance
+              </button>
+
+            )}
+
+          </div>
+
+        )}
+
+
+      {/* ====================================
+            OLD / UNKNOWN STATUS
+        ==================================== */}
+
+      {insurance &&
+        !isCorrecting &&
+        insuranceStatus !== "Rejected" &&
+        insuranceStatus !== "Pending" &&
+        insuranceStatus !== "Verified" && (
+
+          <div className="bg-gray-50 border rounded-xl p-6 mt-8">
+
+            <h2 className="text-2xl font-bold mb-4">
+
+              🛡 Insurance Details
+
+            </h2>
+
+
+            <p>
+              <strong>
+                Category:
+              </strong>{" "}
+              {insurance.category}
+            </p>
+
+
+            <p className="mt-3">
+              <strong>
+                Company:
+              </strong>{" "}
+              {insurance.company}
+            </p>
+
+
+            <p className="mt-3">
+              <strong>
+                Policy Number:
+              </strong>{" "}
+              {insurance.policyNumber}
+            </p>
+
+
+            <p className="mt-3">
+              <strong>
+                Valid Until:
+              </strong>{" "}
+              {insurance.validUntil}
+            </p>
+
+
+          </div>
+
+        )}
+
+
+      {/* ====================================
             FORM
         ==================================== */}
 
-        {(!insurance || isCorrecting) && (
+      {(!insurance || isCorrecting || isRenewing) && (
 
-          <div className="mt-8 space-y-5">
+        <div className="mt-8 space-y-5">
 
 
-            {/* ==================================
+          {/* ==================================
                 CORRECTION HEADER
             ================================== */}
 
-            {isCorrecting && (
+          {isCorrecting && (
 
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
 
-                <h2 className="text-xl font-bold text-blue-700">
+              <h2 className="text-xl font-bold text-blue-700">
 
-                  ✏️ Correct Insurance Information
+                ✏️ Correct Insurance Information
 
-                </h2>
-
-
-                <p className="text-blue-600 mt-2">
-
-                  Correct the rejected information and submit it again for Admin verification.
-
-                </p>
-
-              </div>
-
-            )}
+              </h2>
 
 
-            {/* ==================================
+              <p className="text-blue-600 mt-2">
+
+                Correct the rejected information and submit it again for Admin verification.
+
+              </p>
+
+            </div>
+
+          )}
+
+          {isRenewing && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+              <h2 className="text-xl font-bold text-green-700">
+                🔄 Renew Vehicle Insurance
+              </h2>
+
+              <p className="text-green-600 mt-2">
+                Enter your new insurance information and submit it for Admin verification.
+              </p>
+            </div>
+          )}
+
+
+          {/* ==================================
                 CATEGORY
             ================================== */}
 
-            <div>
+          <div>
 
-              <label className="font-semibold">
+            <label className="font-semibold">
 
-                Insurance Category
+              Insurance Category
 
-              </label>
-
-
-              <select
-                value={category}
-                onChange={(e) => {
-
-                  setCategory(
-                    e.target.value
-                  );
-
-                  setCompany("");
-
-                  setOtherCompany("");
-
-                }}
-                className="w-full border rounded-lg p-3 mt-2"
-              >
-
-                <option value="">
-
-                  Select Insurance Category
-
-                </option>
+            </label>
 
 
-                <option value="general">
+            <select
+              value={category}
+              onChange={(e) => {
 
-                  General Non-Life Insurance
+                setCategory(
+                  e.target.value
+                );
 
-                </option>
+                setCompany("");
+
+                setOtherCompany("");
+
+              }}
+              className="w-full border rounded-lg p-3 mt-2"
+            >
+
+              <option value="">
+
+                Select Insurance Category
+
+              </option>
 
 
-                <option value="micro">
+              <option value="general">
 
-                  Micro Non-Life Insurance
+                General Non-Life Insurance
 
-                </option>
-
-              </select>
-
-            </div>
+              </option>
 
 
-            {/* ==================================
+              <option value="micro">
+
+                Micro Non-Life Insurance
+
+              </option>
+
+            </select>
+
+          </div>
+
+
+          {/* ==================================
                 COMPANY
             ================================== */}
 
-            <div>
+          <div>
 
-              <label className="font-semibold">
+            <label className="font-semibold">
 
-                Insurance Company
+              Insurance Company
 
-              </label>
-
-
-              <select
-                value={company}
-                onChange={(e) =>
-                  setCompany(
-                    e.target.value
-                  )
-                }
-                className="w-full border rounded-lg p-3 mt-2"
-                disabled={!category}
-              >
-
-                <option value="">
-
-                  Select Insurance Company
-
-                </option>
+            </label>
 
 
-                {companies.map(
-                  (item) => (
+            <select
+              value={company}
+              onChange={(e) =>
+                setCompany(
+                  e.target.value
+                )
+              }
+              className="w-full border rounded-lg p-3 mt-2"
+              disabled={!category}
+            >
 
-                    <option
-                      key={item}
-                      value={item}
-                    >
+              <option value="">
 
-                      {item}
+                Select Insurance Company
 
-                    </option>
-
-                  )
-                )}
-
-              </select>
-
-            </div>
+              </option>
 
 
-            {/* ==================================
+              {companies.map(
+                (item) => (
+
+                  <option
+                    key={item}
+                    value={item}
+                  >
+
+                    {item}
+
+                  </option>
+
+                )
+              )}
+
+            </select>
+
+          </div>
+
+
+          {/* ==================================
                 OTHER COMPANY
             ================================== */}
 
-            {company === "Other" && (
-
-              <div>
-
-                <label className="font-semibold">
-
-                  Insurance Company Name
-
-                </label>
-
-
-                <input
-                  type="text"
-                  value={otherCompany}
-                  onChange={(e) =>
-                    setOtherCompany(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Enter company name"
-                  className="w-full border rounded-lg p-3 mt-2"
-                />
-
-              </div>
-
-            )}
-
-
-            {/* ==================================
-                POLICY NUMBER
-            ================================== */}
+          {company === "Other" && (
 
             <div>
 
               <label className="font-semibold">
 
-                Policy Number
+                Insurance Company Name
 
               </label>
 
+
+              <input
+                type="text"
+                value={otherCompany}
+                onChange={(e) =>
+                  setOtherCompany(
+                    e.target.value
+                  )
+                }
+                placeholder="Enter company name"
+                className="w-full border rounded-lg p-3 mt-2"
+              />
+
+            </div>
+
+          )}
+
+
+          {/* ==================================
+                POLICY NUMBER
+            ================================== */}
+
+          {!isRenewing && (
+            <div>
+              <label className="font-semibold">
+                Policy Number
+              </label>
 
               <input
                 type="text"
@@ -1190,86 +1441,88 @@ function Insurance() {
                 placeholder="Enter policy number"
                 className="w-full border rounded-lg p-3 mt-2"
               />
-
             </div>
+          )}
 
 
-            {/* ==================================
+          {/* ==================================
                 VALID UNTIL
             ================================== */}
 
-            <div>
+          <div>
 
-              <label className="font-semibold">
+            <label className="font-semibold">
 
-                Insurance Valid Until
+              Insurance Valid Until
 
-              </label>
-
-
-              <input
-                type="date"
-                value={validUntil}
-                onChange={(e) =>
-                  setValidUntil(
-                    e.target.value
-                  )
-                }
-                className="w-full border rounded-lg p-3 mt-2"
-              />
-
-            </div>
+            </label>
 
 
-            {/* ==================================
-                SUBMIT
-            ================================== */}
-
-            <button
-              onClick={handleSubmit}
-              disabled={saving}
-              className="w-full bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold transition"
-            >
-
-              {saving
-                ? "Saving..."
-                : isCorrecting
-                  ? "🔄 Submit for Re-verification"
-                  : "Submit Insurance"}
-
-            </button>
-
-
-            {/* ==================================
-                CANCEL
-            ================================== */}
-
-            {isCorrecting && (
-
-              <button
-                type="button"
-                onClick={
-                  handleCancelCorrection
-                }
-                disabled={saving}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold transition"
-              >
-
-                Cancel
-
-              </button>
-
-            )}
+            <input
+              type="date"
+              value={validUntil}
+              onChange={(e) =>
+                setValidUntil(
+                  e.target.value
+                )
+              }
+              className="w-full border rounded-lg p-3 mt-2"
+            />
 
           </div>
 
-        )}
 
-      </div>
+          {/* ==================================
+                SUBMIT
+            ================================== */}
+
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="w-full bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold transition"
+          >
+
+            {saving
+              ? "Saving..."
+              : isCorrecting
+                ? "🔄 Submit for Re-verification"
+                : isRenewing
+                  ? "🔄 Submit Insurance Renewal"
+                  : "Submit Insurance"}
+
+          </button>
+
+
+          {/* ==================================
+                CANCEL
+            ================================== */}
+
+          {isCorrecting && (
+
+            <button
+              type="button"
+              onClick={
+                handleCancelCorrection
+              }
+              disabled={saving}
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold transition"
+            >
+
+              Cancel
+
+            </button>
+
+          )}
+
+        </div>
+
+      )}
 
     </div>
 
-  );
+  </div>
+
+);
 }
 
 

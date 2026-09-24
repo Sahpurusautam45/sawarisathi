@@ -22,6 +22,10 @@ import {
 import { db } from "../firebase/firebase";
 import { createAdminActivity } from "../services/adminActivityService";
 
+import {
+  createUserNotificationForUser,
+} from "../services/userNotificationService";
+
 import AdminLayout from "../components/admin/AdminLayout";
 import LoadingSpinner from "../components/LoadingSpinner";
 
@@ -646,6 +650,14 @@ function VehicleReview() {
       };
 
       // ========================================
+      // CHECK DOCUMENT RENEWAL
+      // ========================================
+
+      const isRenewalApproval =
+        status === "Verified" &&
+        vehicle[`${section}RenewalPending`] === true;
+
+      // ========================================
       // SAVE TO FIREBASE
       // ========================================
 
@@ -653,6 +665,47 @@ function VehicleReview() {
         vehicleRef,
         updateData
       );
+
+      if (isRenewalApproval) {
+        try {
+          const documentNames = {
+            tax: "Tax",
+            insurance: "Insurance",
+            bluebook: "Bluebook",
+          };
+
+          const documentName =
+            documentNames[section] || section;
+
+          await createUserNotificationForUser({
+            userId: vehicle.ownerId,
+
+            title:
+              `${documentName} Renewal Approved`,
+
+            message:
+              `Your ${documentName.toLowerCase()} renewal for ${vehicle.vehicleNumber || "your vehicle"
+              } has been approved by Admin.`,
+
+            type: "document_renewal_approved",
+
+            vehicleId,
+
+            documentType: section,
+          });
+
+          console.log(
+            `✅ ${documentName} renewal approval notification sent to user.`
+          );
+
+        } catch (notificationError) {
+
+          console.error(
+            "❌ Failed to create user renewal notification:",
+            notificationError
+          );
+        }
+      }
       // ========================================
       // COMPLETE ADMIN NOTIFICATION
       // ========================================

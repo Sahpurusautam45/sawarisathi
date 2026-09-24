@@ -4,6 +4,7 @@ import { auth } from "../firebase/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { logoutUser } from "../services/authService";
 import { useLanguage } from "../context/LanguageContext";
+import UserNotifications from "./UserNotifications";
 
 function Navbar() {
   const [user, setUser] = useState(null);
@@ -71,11 +72,10 @@ function Navbar() {
               {/* Sliding Background */}
 
               <span
-                className={`absolute top-1 left-1 w-[60px] h-8 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                  language === "ne"
+                className={`absolute top-1 left-1 w-[60px] h-8 bg-white rounded-full shadow-md transition-transform duration-300 ${language === "ne"
                     ? "translate-x-[60px]"
                     : "translate-x-0"
-                }`}
+                  }`}
               />
 
               {/* Language Labels */}
@@ -163,6 +163,16 @@ function Navbar() {
               {t("about")}
             </Link>
           </li>
+
+          {/* ==============================
+    USER NOTIFICATIONS
+============================== */}
+
+          {user && (
+            <li>
+              <UserNotifications />
+            </li>
+          )}
 
 
           {/* ==============================

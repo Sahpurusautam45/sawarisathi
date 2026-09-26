@@ -59,6 +59,17 @@ function Bluebook() {
   const [bluebookRejectionReason, setBluebookRejectionReason] =
     useState("");
 
+  // ==========================================
+  // BLUEBOOK RENEWAL
+  // ==========================================
+
+  const [isRenewing, setIsRenewing] =
+    useState(false);
+
+  const isBluebookExpired =
+    bluebook?.expiryDate &&
+    new Date(`${bluebook.expiryDate}T23:59:59`) < new Date();
+
 
   // ==========================================
   // CORRECTION MODE
@@ -447,6 +458,105 @@ function Bluebook() {
         return;
       }
 
+      // ======================================
+      // BLUEBOOK RENEWAL MODE
+      // ======================================
+
+      if (isRenewing) {
+
+        const vehicleRef = doc(
+          db,
+          "vehicles",
+          vehicleId
+        );
+
+        await updateDoc(
+          vehicleRef,
+          {
+            bluebookStatus: "Pending",
+
+            bluebookRenewalPending: true,
+
+            bluebookRejectionReason: "",
+
+            bluebookResubmitted: false,
+
+            updatedAt:
+              serverTimestamp(),
+          }
+        );
+
+        // ==================================
+        // 🔔 RENEWAL ADMIN NOTIFICATION
+        // ==================================
+
+        await createAdminNotification({
+
+          vehicleId,
+
+          vehicleNumber:
+            vehicle?.vehicleNumber || "",
+
+          ownerId:
+            vehicle?.ownerId || "",
+
+          ownerName:
+            vehicle?.ownerName || "",
+
+          documentType:
+            "Bluebook",
+
+          type:
+            "document_renewal",
+
+          category:
+            "documents",
+
+          title:
+            "Bluebook Renewal Submitted",
+
+          message:
+            `Bluebook renewal for ${vehicle?.vehicleNumber || "vehicle"
+            } has been submitted for verification.`,
+
+        });
+
+        // ==================================
+        // UPDATE LOCAL STATE
+        // ==================================
+
+        setBluebook({
+
+          provinceId: province,
+
+          officeId: office,
+
+          bluebookNumber:
+            bluebookNumber.trim(),
+
+          registrationDate,
+
+          expiryDate,
+
+        });
+
+        setBluebookStatus(
+          "Pending"
+        );
+
+        setBluebookRejectionReason(
+          ""
+        );
+
+        setIsRenewing(false);
+
+        alert(
+          "🔄 Bluebook renewal submitted successfully. It is now pending Admin verification."
+        );
+
+        return;
+      }
+
 
       // ======================================
       // NEW / FIRST-TIME SUBMISSION
@@ -734,7 +844,8 @@ function Bluebook() {
 
         {bluebookStatus === "Verified" &&
           bluebook &&
-          !isCorrecting && (
+          !isCorrecting &&
+          !isBluebookExpired && (
 
             <div className="bg-green-50 border border-green-200 rounded-xl p-6 mt-8">
 
@@ -829,6 +940,103 @@ function Bluebook() {
 
             </div>
 
+          )}
+
+        {/* ====================================
+    EXPIRED BLUEBOOK
+==================================== */}
+
+        {bluebookStatus === "Verified" &&
+          bluebook &&
+          isBluebookExpired &&
+          !isCorrecting && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 mt-8">
+
+              <div className="flex items-center justify-between mb-4">
+
+                <h2 className="text-2xl font-bold">
+                  📘 Bluebook Details
+                </h2>
+
+                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">
+                  ⚠ Expired
+                </span>
+
+              </div>
+
+              <p>
+                <strong>Province:</strong>{" "}
+                {
+                  dotmOffices.find(
+                    (p) =>
+                      p.province_id ===
+                      bluebook.provinceId
+                  )?.province_name || "—"
+                }
+              </p>
+
+              <p className="mt-3">
+                <strong>Transport Office:</strong>{" "}
+                {
+                  dotmOffices
+                    .find(
+                      (p) =>
+                        p.province_id ===
+                        bluebook.provinceId
+                    )
+                    ?.offices.find(
+                      (o) =>
+                        o.office_id ===
+                        bluebook.officeId
+                    )?.office_name || "—"
+                }
+              </p>
+
+              <p className="mt-3">
+                <strong>Bluebook Number:</strong>{" "}
+                {bluebook.bluebookNumber}
+              </p>
+
+              <p className="mt-3">
+                <strong>Registration Date:</strong>{" "}
+                {bluebook.registrationDate}
+              </p>
+
+              <p className="mt-3">
+                <strong>Bluebook Expiry:</strong>{" "}
+                {bluebook.expiryDate}
+              </p>
+
+              <button
+                onClick={() => {
+                  setProvince(
+                    bluebook.provinceId || ""
+                  );
+
+                  setOffice(
+                    bluebook.officeId || ""
+                  );
+
+                  setBluebookNumber(
+                    bluebook.bluebookNumber || ""
+                  );
+
+                  setRegistrationDate(
+                    bluebook.registrationDate || ""
+                  );
+
+                  setExpiryDate(
+                    bluebook.expiryDate || ""
+                  );
+
+                  setIsRenewing(true);
+                }}
+                className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-semibold"
+              >
+                🔄 Renew / Update Bluebook
+              </button>
+
+            </div>
           )}
 
 
@@ -931,7 +1139,7 @@ function Bluebook() {
             BLUEBOOK FORM
         ==================================== */}
 
-        {(!bluebook || isCorrecting) && (
+        {(!bluebook || isCorrecting || isRenewing) && (
 
           <div className="mt-8 space-y-5">
 
@@ -1169,9 +1377,11 @@ function Bluebook() {
 
               {saving
                 ? "Saving..."
-                : isCorrecting
-                  ? "🔄 Submit for Re-verification"
-                  : "Submit Bluebook"}
+                : isRenewing
+                  ? "🔄 Submit Bluebook Renewal"
+                  : isCorrecting
+                    ? "🔄 Submit for Re-verification"
+                    : "Submit Bluebook"}
 
             </button>
 

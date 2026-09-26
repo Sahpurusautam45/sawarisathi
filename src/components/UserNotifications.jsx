@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Bell, Check, X } from "lucide-react";
 import {
     getUserNotifications,
+    subscribeToUserNotifications,
     markUserNotificationAsRead,
 } from "../services/userNotificationService";
 
@@ -34,10 +35,16 @@ function UserNotifications() {
     };
 
     useEffect(() => {
-        if (open) {
-            loadNotifications();
-        }
-    }, [open]);
+        const unsubscribe = subscribeToUserNotifications(
+            (updatedNotifications) => {
+                setNotifications(updatedNotifications);
+            }
+        );
+
+        return () => {
+            unsubscribe();
+        };
+    }, []);
 
     const handleNotificationClick = async (notification) => {
         try {

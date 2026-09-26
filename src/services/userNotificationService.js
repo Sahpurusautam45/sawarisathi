@@ -9,9 +9,10 @@ import {
     updateDoc,
     doc,
     deleteDoc,
+    setDoc,
+    runTransaction,
     serverTimestamp,
 } from "firebase/firestore";
-
 
 // ==========================================
 // CREATE USER NOTIFICATION
@@ -101,6 +102,63 @@ export const getUserNotifications = async () => {
     return notifications;
 };
 
+
+// ==========================================
+// REAL-TIME USER NOTIFICATIONS
+// ==========================================
+
+export const subscribeToUserNotifications = (callback) => {
+    const user = auth.currentUser;
+
+    if (!user) {
+        console.warn(
+            "⚠️ Cannot subscribe: user not logged in."
+        );
+        return () => { };
+    }
+
+    const notificationsRef =
+        collection(db, "userNotifications");
+
+    const q = query(
+        notificationsRef,
+        where("userId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+            const notifications =
+                snapshot.docs.map(
+                    (notificationDoc) => ({
+                        id: notificationDoc.id,
+                        ...notificationDoc.data(),
+                    })
+                );
+
+            // Newest first
+            notifications.sort((a, b) => {
+                const timeA =
+                    a.createdAt?.toMillis?.() || 0;
+
+                const timeB =
+                    b.createdAt?.toMillis?.() || 0;
+
+                return timeB - timeA;
+            });
+
+            callback(notifications);
+        },
+        (error) => {
+            console.error(
+                "❌ User notification listener error:",
+                error
+            );
+        }
+    );
+
+    return unsubscribe;
+};
 
 // ==========================================
 // MARK NOTIFICATION AS READ
@@ -196,7 +254,10 @@ export const createExpiryNotificationOnce = async ({
         );
     }
 
-    // Find existing expiry notifications
+    // ==========================================
+    // FIND EXISTING EXPIRY NOTIFICATIONS
+    // ==========================================
+
     const existingNotifications =
         await findVehicleExpiryNotifications({
             userId: user.uid,
@@ -206,7 +267,6 @@ export const createExpiryNotificationOnce = async ({
 
 
     // ==========================================
-    // CASE 1
     // SAME STATUS ALREADY EXISTS
     // ==========================================
 
@@ -224,6 +284,7 @@ export const createExpiryNotificationOnce = async ({
                 vehicleId,
                 documentType,
                 status,
+                id: sameStatus.id,
             }
         );
 
@@ -237,12 +298,8 @@ export const createExpiryNotificationOnce = async ({
 
 
     // ==========================================
-    // CASE 2
-    // OLD STATUS EXISTS
+    // REMOVE OLD EXPIRY NOTIFICATIONS
     // ==========================================
-
-    // Remove old warning/today/expired notification
-    // before creating the current status notification.
 
     for (
         const notificationDoc
@@ -261,51 +318,79 @@ export const createExpiryNotificationOnce = async ({
 
 
     // ==========================================
-    // CREATE CURRENT NOTIFICATION
+    // DETERMINISTIC NOTIFICATION ID
+    // ==========================================
+    // Same vehicle + document + status
+    // will always use the same Firestore ID.
+    //
+    // This prevents duplicate notifications
+    // if the expiry check runs more than once.
     // ==========================================
 
-    const notificationsRef =
-        collection(db, "userNotifications");
-
-    const notificationDoc =
-        await addDoc(
-            notificationsRef,
-            {
-                userId: user.uid,
-
-                vehicleId,
-                vehicleName,
-                vehicleNumber,
-
-                documentType,
-                status,
-
-                title:
-                    `${documentType} Expiry Alert`,
-
-                message,
-
-                type: "document_expiry",
-
-                read: false,
-
-                createdAt:
-                    serverTimestamp(),
-            }
+    const notificationId =
+        encodeURIComponent(
+            `${user.uid}_${vehicleId}_${documentType}_${status}`
         );
+
+
+    const notificationRef =
+        doc(
+            db,
+            "userNotifications",
+            notificationId
+        );
+
+
+    // ==========================================
+    // CREATE / UPDATE CURRENT NOTIFICATION
+    // ==========================================
+
+    await setDoc(
+        notificationRef,
+        {
+            userId: user.uid,
+
+            vehicleId,
+
+            vehicleName,
+
+            vehicleNumber,
+
+            documentType,
+
+            status,
+
+            title:
+                `${documentType} Expiry Alert`,
+
+            message,
+
+            type:
+                "document_expiry",
+
+            read: false,
+
+            createdAt:
+                serverTimestamp(),
+        }
+    );
 
 
     console.log(
         "✅ Vehicle expiry notification created:",
-        notificationDoc.id
+        notificationId
     );
+
 
     return {
         created: true,
+
         updated:
             existingNotifications.length > 0,
+
         resolved: false,
-        id: notificationDoc.id,
+
+        id: notificationId,
     };
 };
 

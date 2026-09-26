@@ -636,17 +636,28 @@ function VehicleReview() {
       // ========================================
 
       const updateData = {
-
-        [`${section}Status`]:
-          status,
+        [`${section}Status`]: status,
 
         [`${section}RejectionReason`]:
           status === "Rejected"
             ? reason
             : null,
 
-        updatedAt:
-          serverTimestamp(),
+        ...(status === "Verified" &&
+          vehicle[`${section}RenewalPending`] === true
+          ? {
+            [`${section}RenewalPending`]: false,
+          }
+          : {}),
+
+        ...(status === "Verified" &&
+          vehicle[`${section}Resubmitted`] === true
+          ? {
+            [`${section}Resubmitted`]: false,
+          }
+          : {}),
+
+        updatedAt: serverTimestamp(),
       };
 
       // ========================================
@@ -656,6 +667,10 @@ function VehicleReview() {
       const isRenewalApproval =
         status === "Verified" &&
         vehicle[`${section}RenewalPending`] === true;
+
+      const isResubmissionApproval =
+        status === "Verified" &&
+        vehicle[`${section}Resubmitted`] === true;
 
       // ========================================
       // SAVE TO FIREBASE
@@ -673,6 +688,45 @@ function VehicleReview() {
             insurance: "Insurance",
             bluebook: "Bluebook",
           };
+
+          if (isResubmissionApproval) {
+            try {
+              const documentNames = {
+                tax: "Tax",
+                insurance: "Insurance",
+                bluebook: "Bluebook",
+              };
+
+              const documentName =
+                documentNames[section] || section;
+
+              await createUserNotificationForUser({
+                userId: vehicle.ownerId,
+
+                title:
+                  `${documentName} Resubmission Approved`,
+
+                message:
+                  `Your corrected ${documentName.toLowerCase()} has been approved by Admin.`,
+
+                type: "document_resubmission_approved",
+
+                vehicleId,
+
+                documentType: section,
+              });
+
+              console.log(
+                `✅ ${documentName} resubmission approval notification sent to user.`
+              );
+
+            } catch (notificationError) {
+              console.error(
+                "❌ Failed to create user resubmission approval notification:",
+                notificationError
+              );
+            }
+          }
 
           const documentName =
             documentNames[section] || section;
@@ -702,6 +756,45 @@ function VehicleReview() {
 
           console.error(
             "❌ Failed to create user renewal notification:",
+            notificationError
+          );
+        }
+      }
+
+      if (isResubmissionApproval) {
+        try {
+          const documentNames = {
+            tax: "Tax",
+            insurance: "Insurance",
+            bluebook: "Bluebook",
+          };
+
+          const documentName =
+            documentNames[section] || section;
+
+          await createUserNotificationForUser({
+            userId: vehicle.ownerId,
+
+            title:
+              `${documentName} Resubmission Approved`,
+
+            message:
+              `Your corrected ${documentName.toLowerCase()} has been approved by Admin.`,
+
+            type: "document_resubmission_approved",
+
+            vehicleId,
+
+            documentType: section,
+          });
+
+          console.log(
+            `✅ ${documentName} resubmission approval notification sent to user.`
+          );
+
+        } catch (notificationError) {
+          console.error(
+            "❌ Failed to create user resubmission approval notification:",
             notificationError
           );
         }

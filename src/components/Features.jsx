@@ -10,18 +10,28 @@ function Features() {
     },
     {
       icon: "🛡️",
-      title: "Verification",
+      title: "Vehicle Verification",
       description: "Verify vehicle ownership and information."
+    },
+    {
+      icon: "📄",
+      title: "Vehicle Documents",
+      description: "Manage Bluebook, insurance and tax information."
+    },
+    {
+      icon: "🛠️",
+      title: "Service History",
+      description: "Track vehicle servicing, repairs and maintenance."
+    },
+    {
+      icon: "🔔",
+      title: "Renewal & Alerts",
+      description: "Stay informed about document expiry and renewals."
     },
     {
       icon: "🚨",
       title: "Emergency SOS",
       description: "Find nearby police, ambulance and garages."
-    },
-    {
-      icon: "📄",
-      title: "Documents",
-      description: "Manage insurance and bluebook information."
     }
   ];
 
@@ -31,7 +41,7 @@ function Features() {
         Our Services
       </h2>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-6">
         {services.map((service, index) => (
           <div
             key={index}

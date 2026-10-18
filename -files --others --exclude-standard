@@ -1,0 +1,13 @@
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+ package-lock.json                       |  403 [32m++++++[m[31m-[m
+ package.json                            |    1 [32m+[m
+ src/App.jsx                             |   29 [32m+[m
+ src/components/Features.jsx             |   24 [32m+[m[31m-[m
+ src/components/Navbar.jsx               |  445 [32m++++[m[31m---[m
+ src/index.css                           |  347 [32m+++++[m[31m-[m
+ src/pages/Dashboard.jsx                 | 1909 [32m+++++++++++++++++++++++[m[31m--------[m
+ src/pages/VehicleDetails.jsx            |   99 [32m++[m
+ src/services/userNotificationService.js |  198 [32m++++[m
+ src/utils/vehicleAlerts.js              |   38 [32m+[m[31m-[m
+ 10 files changed, 2812 insertions(+), 681 deletions(-)

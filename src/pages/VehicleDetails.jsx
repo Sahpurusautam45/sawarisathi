@@ -21,6 +21,14 @@ import { useLanguage } from "../context/LanguageContext";
 function VehicleDetails() {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
+  // Automatically scroll to the top when opening a vehicle
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, [vehicleId]);
 
   const { t } = useLanguage();
 
@@ -692,6 +700,97 @@ function VehicleDetails() {
 
               </div>
 
+            </div>
+
+
+            {/* Service History */}
+
+            <div
+              onClick={() =>
+                navigate(`/vehicle/${vehicleId}/service-history`)
+              }
+              className="bg-white border rounded-2xl p-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+            >
+              <div className="flex justify-between items-center">
+
+                <h3 className="text-xl font-bold">
+                  🛠️ Service History
+                </h3>
+
+                <span className="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700">
+                  Available
+                </span>
+
+              </div>
+
+              <p className="text-gray-500 mt-4">
+                Track vehicle servicing, repairs and maintenance.
+              </p>
+
+              <p className="text-blue-700 mt-6 font-semibold">
+                View Service History →
+              </p>
+
+            </div>
+
+            {/* ==========================================
+    FUEL & EXPENSES
+========================================== */}
+
+            <div
+              onClick={() =>
+                navigate(`/vehicle/${vehicleId}/fuel-expenses`)
+              }
+              className="bg-white border rounded-2xl p-6 mt-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold">
+                  ⛽ Fuel & Expenses
+                </h3>
+
+                <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
+                  Available
+                </span>
+              </div>
+
+              <p className="text-gray-500 mt-4">
+                Track fuel purchases, maintenance costs, and other vehicle expenses.
+              </p>
+
+              <p className="text-blue-700 mt-6 font-semibold">
+                View Fuel & Expenses →
+              </p>
+            </div>
+
+            {/* ==========================================
+    MAINTENANCE REMINDERS
+========================================== */}
+
+            <div
+              onClick={() =>
+                navigate(`/vehicle/${vehicleId}/maintenance-reminders`)
+              }
+              className="bg-white border rounded-2xl p-6 mt-6 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition duration-300"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold">
+                  🔔 Maintenance Reminders
+                </h3>
+
+                <span className="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-700">
+                  Available
+                </span>
+              </div>
+
+              <p className="text-gray-500 mt-4">
+                Set reminders for general servicing, oil changes, tyre
+                maintenance, brake inspections, insurance renewal, and
+                vehicle tax payments.
+              </p>
+
+              <p className="text-blue-700 mt-6 font-semibold">
+                Manage Maintenance Reminders →
+              </p>
             </div>
 
 

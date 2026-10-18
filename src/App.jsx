@@ -6,6 +6,7 @@ import {
 
 // Language
 import { LanguageProvider } from "./context/LanguageContext";
+import MaintenanceReminders from "./pages/MaintenanceReminders";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -30,7 +31,9 @@ import VehicleDetails from "./pages/VehicleDetails";
 import Bluebook from "./pages/Bluebook";
 import Insurance from "./pages/Insurance";
 import Tax from "./pages/Tax";
+import ServiceHistory from "./pages/ServiceHistory";
 import Documents from "./pages/Documents";
+import FuelExpenses from "./pages/FuelExpenses";
 
 // Admin Pages
 import AdminDashboard from "./admin/AdminDashboard";
@@ -110,6 +113,15 @@ function AppContent() {
         />
 
         <Route
+          path="/vehicle/:vehicleId/maintenance-reminders"
+          element={
+            <ProtectedRoute>
+              <MaintenanceReminders />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/emergency-sos"
           element={<EmergencySOS />}
         />
@@ -164,6 +176,15 @@ function AppContent() {
         />
 
         <Route
+          path="/vehicle/:vehicleId/service-history"
+          element={
+            <ProtectedRoute>
+              <ServiceHistory />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/vehicle/:vehicleId/tax"
           element={
             <ProtectedRoute>
@@ -190,6 +211,14 @@ function AppContent() {
           }
         />
 
+        <Route
+          path="/vehicle/:vehicleId/fuel-expenses"
+          element={
+            <ProtectedRoute>
+              <FuelExpenses />
+            </ProtectedRoute>
+          }
+        />
 
         {/* ==========================================
             ADMIN ROUTES

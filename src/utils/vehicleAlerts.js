@@ -7,21 +7,17 @@ const getDaysRemaining = (dateValue) => {
 
   const expiryDate = new Date(dateValue);
 
-  if (isNaN(expiryDate.getTime())) {
+  if (Number.isNaN(expiryDate.getTime())) {
     return null;
   }
 
   const today = new Date();
-
   today.setHours(0, 0, 0, 0);
   expiryDate.setHours(0, 0, 0, 0);
 
-  const difference =
-    expiryDate.getTime() - today.getTime();
+  const difference = expiryDate.getTime() - today.getTime();
 
-  return Math.ceil(
-    difference / (1000 * 60 * 60 * 24)
-  );
+  return Math.ceil(difference / (1000 * 60 * 60 * 24));
 };
 
 
@@ -30,8 +26,18 @@ const getDaysRemaining = (dateValue) => {
 // ==========================================
 
 export const getAlertStatus = (dateValue) => {
+  // No expiry date was supplied.
+  if (dateValue === null || dateValue === undefined || dateValue === "") {
+    return {
+      status: "noExpiry",
+      daysRemaining: null,
+      message: "No expiry date",
+    };
+  }
+
   const daysRemaining = getDaysRemaining(dateValue);
 
+  // A date was supplied, but it could not be parsed.
   if (daysRemaining === null) {
     return {
       status: "unknown",
@@ -41,11 +47,12 @@ export const getAlertStatus = (dateValue) => {
   }
 
   if (daysRemaining < 0) {
+    const days = Math.abs(daysRemaining);
+
     return {
       status: "expired",
       daysRemaining,
-      message: `Expired ${Math.abs(daysRemaining)} day${Math.abs(daysRemaining) === 1 ? "" : "s"
-        } ago`,
+      message: `Expired ${days} day${days === 1 ? "" : "s"} ago`,
     };
   }
 
@@ -61,8 +68,7 @@ export const getAlertStatus = (dateValue) => {
     return {
       status: "warning",
       daysRemaining,
-      message: `Expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"
-        }`,
+      message: `Expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`,
     };
   }
 
@@ -81,8 +87,6 @@ export const getAlertStatus = (dateValue) => {
 export const getVehicleAlerts = (vehicle) => {
   if (!vehicle) return [];
 
-  const alerts = [];
-
   const documents = [
     {
       type: "Bluebook",
@@ -98,15 +102,13 @@ export const getVehicleAlerts = (vehicle) => {
     },
   ];
 
-  documents.forEach((document) => {
+  return documents.map((document) => {
     const alert = getAlertStatus(document.date);
 
-    alerts.push({
+    return {
       documentType: document.type,
       expiryDate: document.date || null,
       ...alert,
-    });
+    };
   });
-
-  return alerts;
 };

@@ -6,12 +6,14 @@ import {
     query,
     where,
     getDocs,
+    getDoc,
     updateDoc,
     doc,
     deleteDoc,
     setDoc,
     runTransaction,
     serverTimestamp,
+    onSnapshot,
 } from "firebase/firestore";
 
 // ==========================================
@@ -57,6 +59,202 @@ export const createUserNotification = async ({
     );
 };
 
+
+// ==========================================
+// MAINTENANCE NOTIFICATION HELPERS
+// ==========================================
+
+// Generate a consistent notification ID.
+// One reminder can have only one notification
+// for each status and user.
+
+const getMaintenanceNotificationId = ({
+    userId,
+    vehicleId,
+    reminderId,
+    status,
+}) => {
+    return encodeURIComponent(
+        `${userId}_${vehicleId}_${reminderId}_${status}`
+    );
+};
+
+
+// ==========================================
+// CREATE MAINTENANCE NOTIFICATION ONCE
+// ==========================================
+
+export const createMaintenanceNotificationOnce = async ({
+    vehicleId,
+    vehicleName,
+    vehicleNumber,
+    reminderId,
+    reminderTitle,
+    status,
+    message,
+}) => {
+    const user = auth.currentUser;
+
+    if (!user) {
+        throw new Error("User not logged in.");
+    }
+
+    if (
+        !vehicleId ||
+        !reminderId ||
+        !reminderTitle ||
+        !["dueSoon", "overdue"].includes(status)
+    ) {
+        throw new Error(
+            "Maintenance notification information is incomplete."
+        );
+    }
+
+    const notificationId = getMaintenanceNotificationId({
+        userId: user.uid,
+        vehicleId,
+        reminderId,
+        status,
+    });
+
+    const notificationRef = doc(
+        db,
+        "userNotifications",
+        notificationId
+    );
+
+    // Remove the previous status notification.
+    const previousStatus =
+        status === "overdue" ? "dueSoon" : "overdue";
+
+    const previousNotificationId =
+        getMaintenanceNotificationId({
+            userId: user.uid,
+            vehicleId,
+            reminderId,
+            status: previousStatus,
+        });
+
+    await deleteDoc(
+        doc(
+            db,
+            "userNotifications",
+            previousNotificationId
+        )
+    ).catch((error) => {
+        console.warn(
+            "Could not remove previous maintenance notification:",
+            error
+        );
+    });
+
+    // Transaction prevents duplicate creation and
+    // preserves an existing notification's read state.
+    const result = await runTransaction(db, async (transaction) => {
+        const existing = await transaction.get(notificationRef);
+
+        if (existing.exists()) {
+            return {
+                created: false,
+                id: notificationId,
+            };
+        }
+
+        transaction.set(notificationRef, {
+            userId: user.uid,
+            vehicleId,
+            vehicleName: vehicleName || "Vehicle",
+            vehicleNumber: vehicleNumber || "Unknown",
+
+            reminderId,
+            reminderTitle,
+
+            title:
+                status === "overdue"
+                    ? "Maintenance Overdue"
+                    : "Maintenance Due Soon",
+
+            message,
+            status,
+            type: "maintenance",
+
+            read: false,
+            createdAt: serverTimestamp(),
+        });
+
+        return {
+            created: true,
+            id: notificationId,
+        };
+    });
+
+    console.log(
+        result.created
+            ? "Maintenance notification created:"
+            : "Maintenance notification already exists:",
+        result.id
+    );
+
+    return result;
+};
+
+
+// ==========================================
+// RESOLVE MAINTENANCE NOTIFICATIONS
+// ==========================================
+
+export const resolveMaintenanceNotifications = async ({
+    vehicleId,
+    reminderId,
+}) => {
+    const user = auth.currentUser;
+
+    if (!user) {
+        throw new Error("User not logged in.");
+    }
+
+    if (!vehicleId || !reminderId) {
+        return {
+            resolved: false,
+        };
+    }
+
+    const statuses = ["dueSoon", "overdue"];
+
+    let resolvedCount = 0;
+
+    for (const status of statuses) {
+        const notificationId = getMaintenanceNotificationId({
+            userId: user.uid,
+            vehicleId,
+            reminderId,
+            status,
+        });
+
+        const notificationRef = doc(
+            db,
+            "userNotifications",
+            notificationId
+        );
+
+        const snapshot = await getDoc(notificationRef);
+
+        if (snapshot.exists()) {
+            await deleteDoc(notificationRef);
+            resolvedCount++;
+        }
+    }
+
+    console.log(
+        "Maintenance notifications resolved:",
+        resolvedCount
+    );
+
+    return {
+        resolved: resolvedCount > 0,
+        count: resolvedCount,
+    };
+};
 
 // ==========================================
 // GET USER NOTIFICATIONS
